@@ -36,6 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.3.0
   image_picker: ^1.1.2
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^6.0.10
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +65,15 @@ flutter:
   assets:
     - images/qr.jpeg
     - assets/deang.jpeg
+    - assets/dollar.png
+    - assets/images.jpeg
+    - assets/history.png
+    - assets/lay1.jpeg
+    - assets/lay2.jpeg
+    - assets/pep1.jpeg
+    - assets/popkorn.jpeg
+    - assets/bigpop.jpeg
+    
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

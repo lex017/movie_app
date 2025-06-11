@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class DetailTicket extends StatelessWidget {
   final Map<String, dynamic> movieData;
@@ -7,8 +8,7 @@ class DetailTicket extends StatelessWidget {
   const DetailTicket({
     Key? key,
     required this.movieData,
-    required this.paymentData, required ticketDocId,
-    // ticketDocId is not used here, so it can be omitted if not needed
+    required this.paymentData,
   }) : super(key: key);
 
   @override
@@ -52,20 +52,21 @@ class DetailTicket extends StatelessWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.redAccent,
-                      image: movieData.containsKey('poster')
+                      image: movieData.containsKey('image')
                           ? DecorationImage(
-                              image: NetworkImage(movieData['poster']),
+                              image: NetworkImage(movieData['image']),
                               fit: BoxFit.cover,
                             )
                           : null,
                     ),
-                    child: movieData.containsKey('poster')
+                    child: movieData.containsKey('image')
                         ? null
                         : Center(
-                            child: Icon(
-                              Icons.movie,
-                              color: Colors.white.withOpacity(0.8),
-                              size: 80,
+                            child: Image.network(
+                              'https://images.ctfassets.net/3sjsytt3tkv5/48dw0Wqg1t7RMqLrtodjqL/d72b35dae2516fa64803f4de2ab8e30f/Avengers-_Endgame_-_Header_Image.jpeg', // Fallback image
+                              height: 200, // Ensure it covers the entire height
+                              width: double.infinity, // Fill the width of the container
+                              fit: BoxFit.cover, // Maintain aspect ratio and cover the area
                             ),
                           ),
                   ),
@@ -74,7 +75,7 @@ class DetailTicket extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Movie Title and Show Date
                       Text(
@@ -85,9 +86,16 @@ class DetailTicket extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      QrImageView(
+                        data: 'ticketId', // Replace with actual ticket ID or data
+                        version: QrVersions.auto,
+                        size: 150,
+                        backgroundColor: Colors.white,
+                      ),
                       Text(
                         'Show Date: ${movieData['showDate'] ?? 'N/A'}',
-                        style: const TextStyle(fontSize: 16, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                       const SizedBox(height: 16),
                       // Theater and Seat Information
@@ -145,7 +153,7 @@ class DetailTicket extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -161,27 +169,25 @@ class DetailTicket extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                       // Back Button
-                      Center(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Text(
-                            'Back to History',
-                            style: TextStyle(fontSize: 16,color: Colors.white)
-                            ,
-                            
-                          ),
-                        ),
-                      ),
+                      // Center(
+                      //   child: ElevatedButton(
+                      //     style: ElevatedButton.styleFrom(
+                      //       backgroundColor: Colors.redAccent,
+                      //       padding: const EdgeInsets.symmetric(
+                      //           horizontal: 32, vertical: 12),
+                      //       shape: RoundedRectangleBorder(
+                      //         borderRadius: BorderRadius.circular(8),
+                      //       ),
+                      //     ),
+                      //     onPressed: () {
+                      //       Navigator.pop(context);
+                      //     },
+                      //     child: const Text(
+                      //       'Back to History',
+                      //       style: TextStyle(fontSize: 16, color: Colors.white),
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),

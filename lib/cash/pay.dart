@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:movie_app/buttombar/ticket.dart';
+import 'package:movie_app/myticket.dart';
 
 class Pay extends StatefulWidget {
   const Pay({super.key});
@@ -101,14 +103,8 @@ class _PayState extends State<Pay> {
             const Text("Payment & Booking Details",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            TextField(
-              controller: amountController,
-              decoration: InputDecoration(
-                labelText: "Amount",
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              keyboardType: TextInputType.number,
+            Text(
+             '50,000 Kip'
             ),
             const SizedBox(height: 20),
             TextFormField(
@@ -182,7 +178,12 @@ class _PayState extends State<Pay> {
             const SizedBox(height: 40),
             Center(
               child: ElevatedButton(
-                onPressed: (){},
+                onPressed: (){
+                  Navigator.of(context).pop();
+                MaterialPageRoute route =
+                    MaterialPageRoute(builder: (c) => Ticket());
+                Navigator.of(context).push(route);
+                },
                 style: ElevatedButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 50, vertical: 15),

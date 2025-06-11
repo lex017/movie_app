@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:movie_app/cash/qr.dart';
+import 'package:movie_app/selectchair.dart';
 
 class MovieDetails extends StatefulWidget {
   final String title;
@@ -13,6 +14,8 @@ class MovieDetails extends StatefulWidget {
 
 class _MovieDetailsState extends State<MovieDetails> {
   bool isFavorite = false;
+  List<String> availableTimes = ['10:00 AM', '1:00 PM', '4:00 PM', '7:00 PM', '10:00 PM', '12:00 AM'];
+  String? selectedTime;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +25,7 @@ class _MovieDetailsState extends State<MovieDetails> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          widget.title.toUpperCase(), // Uppercase for emphasis
+          widget.title.toUpperCase(),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -74,12 +77,10 @@ class _MovieDetailsState extends State<MovieDetails> {
             maxChildSize: 0.9,
             builder: (context, scrollController) {
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(30)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
@@ -91,7 +92,6 @@ class _MovieDetailsState extends State<MovieDetails> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Drag handle indicator
                     Container(
                       width: 50,
                       height: 5,
@@ -113,8 +113,6 @@ class _MovieDetailsState extends State<MovieDetails> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-
-                        // Subtitle
                         Text(
                           "Now in Theaters",
                           style: TextStyle(
@@ -127,9 +125,10 @@ class _MovieDetailsState extends State<MovieDetails> {
                         const SizedBox(height: 15),
                       ],
                     ),
-                    // Movie description
+
+                    // Description
                     Text(
-                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Sed at dui nec ipsum vestibulum venenatis.",
+                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[800],
@@ -137,23 +136,59 @@ class _MovieDetailsState extends State<MovieDetails> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        children: [],
+
+                    // 🎬 Time selection
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Select Showtime",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      children: availableTimes.map((time) {
+                        final isSelected = selectedTime == time;
+                        return ChoiceChip(
+                          label: Text(time),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setState(() {
+                              selectedTime = time;
+                            });
+                          },
+                          selectedColor: Colors.redAccent,
+                          backgroundColor: Colors.grey[200],
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }).toList(),
+                    ),
 
-                    // Book Now button at the bottom
+                    const SizedBox(height: 20),
+
+                    // 📅 Book Now button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          MaterialPageRoute route =
-                              MaterialPageRoute(builder: (c) => qrpage());
-                          Navigator.of(context).push(route);
-                        },
+                        onPressed: selectedTime == null
+                            ? null
+                            : () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (c) => ChairSelection(
+                                      selectedTime: selectedTime!,
+                                    ),
+                                  ),
+                                );
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
                           shape: RoundedRectangleBorder(

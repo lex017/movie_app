@@ -63,7 +63,7 @@ class _MainpageState extends State<Home> {
               icon: CircleAvatar(
                 child: ClipOval(
                   child: Image.asset(
-                    "assets/deang.jpeg",
+                    "assets/dollar.png",
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(Icons.error, color: Colors.red);
@@ -92,7 +92,6 @@ class _MainpageState extends State<Home> {
             child: Text("ຄົ້ນຫາ"),
           ),
         ]),
-        drawer: drawer_menu(),
       ),
     );
   }

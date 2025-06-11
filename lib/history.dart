@@ -4,14 +4,14 @@ import 'package:movie_app/history.dart';
 import 'package:movie_app/ticketdetail.dart';
 
 
-class Ticket extends StatefulWidget {
-  const Ticket({super.key});
+class History extends StatefulWidget {
+  const History({super.key});
 
   @override
-  State<Ticket> createState() => _HistoryState();
+  State<History> createState() => _HistoryState();
 }
 
-class _HistoryState extends State<Ticket> {
+class _HistoryState extends State<History> {
   final List<Map<String, dynamic>> historyList = [
     {
       'movie': {
@@ -45,21 +45,8 @@ class _HistoryState extends State<Ticket> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Movie Ticket"),
-        actions: [
-            IconButton(
-              icon: const CircleAvatar(
-                backgroundImage: AssetImage('assets/history.png'),
-              ),
-              onPressed: () {
-                Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => History()),
-                        );
-              },
-            ),
-            const SizedBox(width: 10),
-          ],
+        title: const Text("History"),
+        
       ),
       body: historyList.isEmpty
           ? const Center(child: Text("No movie history found."))
@@ -93,7 +80,7 @@ class _HistoryState extends State<Ticket> {
                 );
               },
             ),
-      drawer: const drawer_menu(),
+      
     );
   }
 }

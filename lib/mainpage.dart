@@ -7,6 +7,7 @@ import 'package:movie_app/drawer.dart';
 import 'package:movie_app/headbar/comingsoon.dart';
 import 'package:movie_app/headbar/nowshowing.dart';
 import 'package:movie_app/homepage.dart';
+import 'package:movie_app/reward.dart';
 
 class Mainpage extends StatefulWidget {
   const Mainpage({super.key});
@@ -69,9 +70,13 @@ class _MainpageState extends State<Mainpage> {
           actions: [
             IconButton(
               icon: const CircleAvatar(
-                backgroundImage: AssetImage('assets/deang.jpeg'),
+                backgroundImage: AssetImage('assets/dollar.png'),
               ),
               onPressed: () {
+                Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => Reward()),
+                        );
               },
             ),
             const SizedBox(width: 10),
@@ -96,7 +101,7 @@ class _MainpageState extends State<Mainpage> {
           ),
           
         ]),
-        drawer: drawer_menu(),
+  
       ),
     );
   }
