@@ -1,45 +1,46 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:movie_app/drawer.dart';
 import 'package:movie_app/history.dart';
 import 'package:movie_app/ticketdetail.dart';
 
-
 class Ticket extends StatefulWidget {
-  const Ticket({super.key});
+  final String uid;
+  const Ticket({super.key, required this.uid});
 
   @override
-  State<Ticket> createState() => _HistoryState();
+  State<Ticket> createState() => _TicketState();
 }
 
-class _HistoryState extends State<Ticket> {
-  final List<Map<String, dynamic>> historyList = [
-    {
-      'movie': {
-        'title': 'Avengers: Endgame',
-        'showDate': '2025-03-14',
-        'theater': 'Deanger',
-        'seat': 'A10',
-      },
-      'payment': {
-        'amount': 50000,
-        'status': 'Paid',
-      },
-      'ticketDocId': '1',
-    },
-    {
-      'movie': {
-        'title': 'Spider-Man: No Way Home',
-        'showDate': '2025-03-12',
-        'theater': 'Deanger',
-        'seat': 'B5',
-      },
-      'payment': {
-        'amount': 20000,
-        'status': 'Paid',
-      },
-      'ticketDocId': '2',
-    },
-  ];
+class _TicketState extends State<Ticket> {
+  List<Map<String, dynamic>> historyList = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchTickets();
+  }
+
+  Future<void> fetchTickets() async {
+    try {
+      final response = await http.get(Uri.parse('http://192.168.126.1:8000/tickets'));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          historyList = data.cast<Map<String, dynamic>>();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load tickets');
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      print('Error fetching tickets: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,53 +48,50 @@ class _HistoryState extends State<Ticket> {
       appBar: AppBar(
         title: const Text("Movie Ticket"),
         actions: [
-            IconButton(
-              icon: const CircleAvatar(
-                backgroundImage: AssetImage('assets/history.png'),
-              ),
-              onPressed: () {
-                Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => History()),
-                        );
-              },
+          IconButton(
+            icon: const CircleAvatar(
+              backgroundImage: AssetImage('assets/history.png'),
             ),
-            const SizedBox(width: 10),
-          ],
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => HistoryPage(uid: widget.uid,)));
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
-      body: historyList.isEmpty
-          ? const Center(child: Text("No movie history found."))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: historyList.length,
-              itemBuilder: (context, index) {
-                var movieData = historyList[index]['movie'];
-                var paymentData = historyList[index]['payment'];
-                var ticketDocId = historyList[index]['ticketDocId']; 
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : historyList.isEmpty
+              ? const Center(child: Text("No movie history found."))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: historyList.length,
+                  itemBuilder: (context, index) {
+                    final ticket = historyList[index];
 
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailTicket(
-                          movieData: movieData,
-                          paymentData: paymentData,
-                          
-                        ),
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailTicket(
+                              ticketData: ticket,
+                              movieData: {},
+                              paymentData: {},
+                              image: ticket['posterURL'] ?? '', uid: widget.uid,
+                            ),
+                          ),
+                        );
+                      },
+                      child: TicketWidget(
+                        title: ticket['mv_name'] ?? 'N/A',
+                        subtitle: 'Theater: ${ticket['theaters'] ?? 'N/A'}',
+                        date: (ticket['show_date'] ?? '').toString().split('T')[0],
+                        seat: ticket['seat_num'] ?? 'N/A',
                       ),
                     );
                   },
-                  child: TicketWidget(
-                    title: movieData['title'],
-                    subtitle: 'Theater: ${movieData['theater']}',
-                    date: movieData['showDate'],
-                    seat: movieData['seat'],
-                  ),
-                );
-              },
-            ),
-      drawer: const drawer_menu(),
+                ),
     );
   }
 }
@@ -131,9 +129,9 @@ class TicketWidget extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.red,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),

@@ -77,7 +77,7 @@ class _MainpageState extends State<Home> {
         ),
         body: TabBarView(children: [
           Center(
-            child: Nowshowing(),
+            child: Nowshowing(uid: '',),
           ),
           Center(
             child: Comingsoon(),

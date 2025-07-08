@@ -1,18 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:movie_app/homepage.dart';
+import 'package:movie_app/main.dart';
+import 'package:movie_app/mainpage.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class DetailTicket extends StatelessWidget {
+  final Map<String, dynamic> ticketData;
   final Map<String, dynamic> movieData;
   final Map<String, dynamic> paymentData;
+  final String image;
+  final String uid;
 
   const DetailTicket({
     Key? key,
+    required this.ticketData,
     required this.movieData,
     required this.paymentData,
+    required this.image,
+    required this.uid,
   }) : super(key: key);
+
+  String _formatDate(String dateStr) {
+    try {
+      DateTime dateTime = DateTime.parse(dateStr).toLocal();
+      return DateFormat('dd/MM/yyyy Time HH:mm').format(dateTime);
+    } catch (e) {
+      return 'Invalid date';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final String imageUrl = ticketData['posterURL'] ?? '';
+
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
@@ -41,153 +62,85 @@ class DetailTicket extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Movie Poster Section
+                // Poster
                 ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  child: Container(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: SizedBox(
                     height: 200,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      image: movieData.containsKey('image')
-                          ? DecorationImage(
-                              image: NetworkImage(movieData['image']),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: movieData.containsKey('image')
-                        ? null
-                        : Center(
-                            child: Image.network(
-                              'https://images.ctfassets.net/3sjsytt3tkv5/48dw0Wqg1t7RMqLrtodjqL/d72b35dae2516fa64803f4de2ab8e30f/Avengers-_Endgame_-_Header_Image.jpeg', // Fallback image
-                              height: 200, // Ensure it covers the entire height
-                              width: double.infinity, // Fill the width of the container
-                              fit: BoxFit.cover, // Maintain aspect ratio and cover the area
-                            ),
+                    child: imageUrl.isNotEmpty
+                        ? Image.network(imageUrl,
+                            fit: BoxFit.cover, width: double.infinity)
+                        : Image.network(
+                            'https://images.ctfassets.net/3sjsytt3tkv5/48dw0Wqg1t7RMqLrtodjqL/d72b35dae2516fa64803f4de2ab8e30f/Avengers-_Endgame_-_Header_Image.jpeg',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
                           ),
                   ),
                 ),
-                // Ticket Details Section
+                // Details
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Movie Title and Show Date
                       Text(
-                        movieData['title'] ?? 'Unknown Title',
+                        ticketData['mv_name'] ?? 'Unknown Movie',
                         style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 24, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       QrImageView(
-                        data: 'ticketId', // Replace with actual ticket ID or data
+                        data: ticketData['ticket_id'].toString(),
                         version: QrVersions.auto,
                         size: 150,
                         backgroundColor: Colors.white,
                       ),
+                      const SizedBox(height: 12),
                       Text(
-                        'Show Date: ${movieData['showDate'] ?? 'N/A'}',
+                        'Show Date: ${_formatDate(ticketData['show_date'] ?? '')}',
                         style:
                             const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
+                      const SizedBox(height: 20),
+
+                      // Info Rows
+                      _buildInfoRow(
+                          'Theater',
+                          ticketData['theaters'].toString(),
+                          'Seat',
+                          ticketData['seat_num']),
                       const SizedBox(height: 16),
-                      // Theater and Seat Information
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Theater',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                movieData['theater'] ?? 'N/A',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
+                      _buildInfoRow('Name', ticketData['name'], 'Time',
+                          ticketData['time_b']),
+                      const SizedBox(height: 16),
+                      _buildInfoRow('Price', '${ticketData['price']} Kip',
+                          'Status', ticketData['status']),
+                      const SizedBox(height: 24),
+
+                      // Back Button
+                      Center(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Seat',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                movieData['seat'] ?? 'N/A',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
+                          onPressed: () => Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => Homepage(uid: uid)),
+                            (Route<dynamic> route) =>
+                                false, 
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Dashed Divider
-                      CustomPaint(
-                        size: const Size(double.infinity, 1),
-                        painter: DashedLinePainter(),
-                      ),
-                      const SizedBox(height: 16),
-                      // Payment Details Section
-                      const Text(
-                        'Payment Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          child: const Text(
+                            'Back',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Amount: ${paymentData['amount'] ?? '0'} Kip',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          Text(
-                            'Status: ${paymentData['status'] ?? 'N/A'}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Back Button
-                      // Center(
-                      //   child: ElevatedButton(
-                      //     style: ElevatedButton.styleFrom(
-                      //       backgroundColor: Colors.redAccent,
-                      //       padding: const EdgeInsets.symmetric(
-                      //           horizontal: 32, vertical: 12),
-                      //       shape: RoundedRectangleBorder(
-                      //         borderRadius: BorderRadius.circular(8),
-                      //       ),
-                      //     ),
-                      //     onPressed: () {
-                      //       Navigator.pop(context);
-                      //     },
-                      //     child: const Text(
-                      //       'Back to History',
-                      //       style: TextStyle(fontSize: 16, color: Colors.white),
-                      //     ),
-                      //   ),
-                      // ),
                     ],
                   ),
                 ),
@@ -198,28 +151,29 @@ class DetailTicket extends StatelessWidget {
       ),
     );
   }
-}
 
-class DashedLinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.grey
-      ..strokeWidth = 1;
-
-    const dashWidth = 5.0;
-    const dashSpace = 3.0;
-    double startX = 0;
-    while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
-      startX += dashWidth + dashSpace;
-    }
+  Widget _buildInfoRow(
+      String label1, String? value1, String label2, String? value2) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildInfoColumn(label1, value1),
+        _buildInfoColumn(label2, value2),
+      ],
+    );
   }
 
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
+  Widget _buildInfoColumn(String label, String? value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(
+          value ?? 'N/A',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+      ],
+    );
+  }
 }

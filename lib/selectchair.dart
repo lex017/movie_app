@@ -1,146 +1,153 @@
 import 'package:flutter/material.dart';
-// Import your next page or QR page here:
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'package:movie_app/cash/qr.dart';
-
-class MovieSeatSelectionApp extends StatefulWidget {
-  const MovieSeatSelectionApp({Key? key}) : super(key: key);
-
-  @override
-  State<MovieSeatSelectionApp> createState() => _MovieSeatSelectionAppState();
-}
-
-class _MovieSeatSelectionAppState extends State<MovieSeatSelectionApp> {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Movie Seat Selection',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1F1F1F),
-          elevation: 0,
-          centerTitle: true,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurpleAccent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-        ),
-      ),
-      home: const ChairSelection(selectedTime: ''),
-    );
-  }
-}
 
 class ChairSelection extends StatefulWidget {
   final String selectedTime;
-  const ChairSelection({Key? key, required this.selectedTime}) : super(key: key);
+  final String title;
+  final int price;
+  final int theaters;
+  final String date;
+  final List<List<int>> seats;
+  final String uid;
+  final int showtimeId;
+  final String image;
+
+  const ChairSelection({
+    Key? key,
+    required this.selectedTime,
+    required this.price,
+    required this.theaters,
+    required this.seats,
+    required this.title,
+    required this.date,
+    required this.uid,
+    required this.showtimeId,
+    required this.image,
+  }) : super(key: key);
 
   @override
   State<ChairSelection> createState() => _ChairSelectionState();
 }
 
 class _ChairSelectionState extends State<ChairSelection> {
-  // Example data for chairs (1 = available, 0 = reserved)
-  final List<List<int>> _seats = List.generate(10, (index) => List.generate(10, (index) => 1)); // 10x10 grid
-
-  // Track selected seats
+  late List<List<int>> _seats;
   final Set<Seat> _selectedSeats = {};
 
-  // You can customize these to match your design or dynamic values:
-  final int _seatPrice = 50000;
-  final String _showTime = "20:50";
+  @override
+  void initState() {
+    super.initState();
+    _seats = List.generate(
+      widget.seats.length,
+      (i) => List<int>.from(widget.seats[i]),
+    );
+
+    // ดึงข้อมูลหลัง build เสร็จ เพื่อให้ setState() ทำงานได้
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchBookedSeatsFromApi();
+    });
+  }
+
+  Future<void> fetchBookedSeatsFromApi() async {
+    try {
+      final url = Uri.parse('http://192.168.126.1:8000/api/booked-seats/${widget.showtimeId}');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> bookedSeats = data['bookedSeats'];
+
+        for (var seatLabel in bookedSeats) {
+          int row = seatLabel.codeUnitAt(0) - 65;
+          int col = int.parse(seatLabel.substring(1)) - 1;
+
+          if (row >= 0 && row < _seats.length && col >= 0 && col < _seats[row].length) {
+            _seats[row][col] = 0; // 0 = reserved
+            print("Seat $seatLabel marked reserved at [$row][$col]");
+          }
+        }
+
+        setState(() {});
+      } else {
+        print('Error fetching seats: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Exception fetching seats: $e');
+    }
+  }
+
+  String getSeatLabel(int row, int col) {
+    return '${String.fromCharCode(65 + row)}${col + 1}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate the total cost and number of seats
-    final seatCount = _selectedSeats.length;
-    final totalPrice = seatCount * _seatPrice;
+    final int seatPrice = widget.price;
+    final int seatCount = _selectedSeats.length;
+    final int totalPrice = seatCount * seatPrice;
+    final int columns = _seats.isNotEmpty ? _seats[0].length : 1;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Select Your Seats"),
-      ),
+      appBar: AppBar(title: const Text("Select Your Seats")),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const SizedBox(height: 16),
             const Text(
               "Choose Your Seats",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
-
-            // Seat Grid
+            const SizedBox(height: 10),
+            Text('Theaters: ${widget.theaters}'),
+            const SizedBox(height: 10),
             Expanded(
               child: Card(
                 color: const Color(0xFF1F1F1F),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12),
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 10, // Number of columns
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
-                    itemCount: _seats.length * _seats[0].length,
+                    itemCount: _seats.length * columns,
                     itemBuilder: (context, index) {
-                      int row = index ~/ _seats[0].length;
-                      int col = index % _seats[0].length;
+                      int row = index ~/ columns;
+                      int col = index % columns;
+
                       bool isReserved = _seats[row][col] == 0;
-                      bool isSelected = _selectedSeats.contains(Seat(row, col));
+                      Seat seat = Seat(row, col);
+                      bool isSelected = _selectedSeats.contains(seat);
 
                       return GestureDetector(
                         onTap: () {
+                          if (isReserved) return;
                           setState(() {
-                            if (!isReserved) {
-                              Seat seat = Seat(row, col);
-                              if (_selectedSeats.contains(seat)) {
-                                _selectedSeats.remove(seat);
-                              } else {
-                                _selectedSeats.add(seat);
-                              }
-                            }
+                            isSelected ? _selectedSeats.remove(seat) : _selectedSeats.add(seat);
                           });
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
                             color: isReserved
-                                ? Colors.red.shade400
+                                ? Colors.red
                                 : isSelected
-                                    ? Colors.greenAccent.shade400
+                                    ? Colors.green
                                     : Colors.grey.shade700,
-                            borderRadius: BorderRadius.circular(8.0),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.4),
-                                offset: const Offset(2, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Center(
-                            child: isReserved
-                                ? const Icon(Icons.close, color: Colors.white)
-                                : isSelected
-                                    ? const Icon(Icons.check, color: Colors.white)
-                                    : const SizedBox.shrink(),
+                            child: Text(
+                              getSeatLabel(row, col),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -149,72 +156,58 @@ class _ChairSelectionState extends State<ChairSelection> {
                 ),
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            // Info panel: seats, price, time, total
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF1F1F1F),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Left column: seats, price, time
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Seats: $seatCount",
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Price: $_seatPrice/kip",
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Time: $_showTime",
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                  // Right side: total
-                  Text(
-                    "Total: $totalPrice/kip",
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text("Seats: $seatCount", style: const TextStyle(color: Colors.white)),
+                    Text("Price/seat: $seatPrice", style: const TextStyle(color: Colors.white)),
+                    Text("Time: ${widget.selectedTime}", style: const TextStyle(color: Colors.white)),
+                  ]),
+                  Text("Total: $totalPrice kip",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
-
-            const SizedBox(height: 20),
-
-            // Book Now Button
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const qrpage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50), // Full-width button
-                backgroundColor: Colors.red, // <-- Add your color here
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Book Now',
-                style: TextStyle(fontSize: 18, color: Colors.white),
-              ),
-            ),
+              onPressed: seatCount == 0
+                  ? null
+                  : () {
+                      List<String> selectedLabels = _selectedSeats
+                          .map((seat) => getSeatLabel(seat.row, seat.col))
+                          .toList();
 
-            const SizedBox(height: 20),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => qrpage(
+                            selectedTime: widget.selectedTime,
+                            price: totalPrice,
+                            theaters: widget.theaters,
+                            selectedSeats: selectedLabels,
+                            title: widget.title,
+                            date: widget.date,
+                            uid: widget.uid,
+                            showtimeId: widget.showtimeId,
+                            image: widget.image,
+                          ),
+                        ),
+                      );
+                    },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Book Now', style: TextStyle(fontSize: 18, color: Colors.white)),
+            ),
           ],
         ),
       ),
@@ -222,7 +215,6 @@ class _ChairSelectionState extends State<ChairSelection> {
   }
 }
 
-// Seat model
 class Seat {
   final int row;
   final int col;
@@ -230,12 +222,7 @@ class Seat {
   Seat(this.row, this.col);
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Seat &&
-          runtimeType == other.runtimeType &&
-          row == other.row &&
-          col == other.col;
+  bool operator ==(Object other) => other is Seat && row == other.row && col == other.col;
 
   @override
   int get hashCode => row.hashCode ^ col.hashCode;

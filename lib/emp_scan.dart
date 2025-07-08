@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:http/http.dart' as http;
 
 class ScanPage extends StatefulWidget {
-  const ScanPage({super.key});
+  final String userId; // รับ userId เพื่อส่ง redeem
+  const ScanPage({super.key, required this.userId});
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -11,9 +14,11 @@ class ScanPage extends StatefulWidget {
 class _ScanPageState extends State<ScanPage> {
   String? scannedCode;
   bool isScanned = false;
+  bool isRedeeming = false;
+
   final MobileScannerController _controller = MobileScannerController();
 
-  void handleBarcode(BarcodeCapture capture) {
+  void handleBarcode(BarcodeCapture capture) async {
     if (!isScanned && capture.barcodes.isNotEmpty) {
       final String code = capture.barcodes.first.rawValue ?? '---';
       setState(() {
@@ -23,6 +28,7 @@ class _ScanPageState extends State<ScanPage> {
 
       _controller.stop();
 
+      // แสดง Dialog และพร้อม Redeem
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -38,15 +44,77 @@ class _ScanPageState extends State<ScanPage> {
               child: const Text('Scan Again'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                Navigator.of(context).pop(code);
+                await _redeemPoints(code);
               },
-              child: const Text('Finish'),
+              child: isRedeeming
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Redeem Points'),
             ),
           ],
         ),
       );
+    }
+  }
+
+  Future<void> _redeemPoints(String qrData) async {
+    setState(() {
+      isRedeeming = true;
+    });
+
+    try {
+      final data = json.decode(qrData);
+
+      final candies = data['candies'];
+      final points = data['points'];
+
+      final res = await http.post(
+        Uri.parse('http://192.168.126.1:8000/redeem'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'u_id': widget.userId,
+          'items': candies,
+          'points': points,
+        }),
+      );
+
+      if (res.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✅ Redeemed successfully!')),
+          );
+          Navigator.of(context).pop(); // กลับหน้าก่อนหน้า
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('❌ Redeem failed: ${res.body}')),
+          );
+          setState(() {
+            isScanned = false; // ให้ลองสแกนใหม่
+          });
+          _controller.start();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Error parsing QR: $e')),
+        );
+        setState(() {
+          isScanned = false;
+        });
+        _controller.start();
+      }
+    } finally {
+      setState(() {
+        isRedeeming = false;
+      });
     }
   }
 
@@ -62,6 +130,20 @@ class _ScanPageState extends State<ScanPage> {
       appBar: AppBar(
         title: const Text('Scan QR Code'),
         backgroundColor: Colors.red,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flash_on),
+            onPressed: () {
+              _controller.toggleTorch();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.cameraswitch),
+            onPressed: () {
+              _controller.switchCamera();
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -85,7 +167,7 @@ class _ScanPageState extends State<ScanPage> {
             ),
           ),
 
-          // ✅ Focus square overlay
+          // Focus square overlay
           Center(
             child: CustomPaint(
               painter: ScannerOverlay(),
@@ -98,12 +180,12 @@ class _ScanPageState extends State<ScanPage> {
   }
 }
 
-// ✅ Painter for the square focus overlay
 class ScannerOverlay extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    const double borderSize = 250; // Size of the square
+    const double borderSize = 250; // square size
     final Paint paint = Paint()..color = Colors.black.withOpacity(0.5);
+
     final Path overlayPath = Path.combine(
       PathOperation.difference,
       Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
@@ -121,7 +203,6 @@ class ScannerOverlay extends CustomPainter {
     );
     canvas.drawPath(overlayPath, paint);
 
-    // Optional: Draw white border around the focus square
     final Paint borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke

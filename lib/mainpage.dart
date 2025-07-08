@@ -10,7 +10,8 @@ import 'package:movie_app/homepage.dart';
 import 'package:movie_app/reward.dart';
 
 class Mainpage extends StatefulWidget {
-  const Mainpage({super.key});
+  final String uid;
+  const Mainpage({super.key, required this.uid});
 
   @override
   State<Mainpage> createState() => _MainpageState();
@@ -75,7 +76,7 @@ class _MainpageState extends State<Mainpage> {
               onPressed: () {
                 Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => Reward()),
+                          MaterialPageRoute(builder: (context) => Reward(uid: widget.uid,)),
                         );
               },
             ),
@@ -85,19 +86,19 @@ class _MainpageState extends State<Mainpage> {
         
         body: TabBarView(children: [
           Center(
-            child: Nowshowing(),
+            child: Nowshowing(uid: widget.uid,),
           ),
           Center(
             child: Comingsoon(),
           ),
           Center(
-            child: Text("preorder"),
+            child: Text("Comming soon"),
           ),
           Center(
-            child: Text("ນຳເຂົ້າ"),
+            child: Text("Comming soon"),
           ),
           Center(
-            child: Text("ຄົ້ນຫາ"),
+            child: Text("Comming soon"),
           ),
           
         ]),

@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:movie_app/detailcoming.dart';
+import 'package:http/http.dart' as http;
 
 class Comingsoon extends StatefulWidget {
   @override
@@ -7,24 +10,48 @@ class Comingsoon extends StatefulWidget {
 }
 
 class _ComingsoonState extends State<Comingsoon> {
-  final List<Map<String, String>> movies = [
-    {
-      "title": "Avengers: Endgame",
-      "image": "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg"
-    },
-    {
-      "title": "Spider-Man: No Way Home",
-      "image": "https://image.tmdb.org/t/p/w500/5weKu49pzJCt06OPpjvT80efnQj.jpg"
-    },
-    {
-      "title": "The Batman",
-      "image": "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg"
-    },
-    {
-      "title": "Fast & Furious 9",
-      "image": "https://image.tmdb.org/t/p/w500/bOFaAXmWWXC3Rbv4u4uM9ZSzRXP.jpg"
-    },
-  ];
+  List<Map<String, dynamic>> movies = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchMovies();
+  }
+
+  Future<void> fetchMovies() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.126.1:8000/movie'), // เปลี่ยนเป็น URL API ของคุณ
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+
+        setState(() {
+          movies = data
+              .where((item) => item['status'] == 'comming') // กรอง status == 'comming'
+              .map<Map<String, dynamic>>((item) => {
+                    'mv_name': item['mv_name'],
+                    'posterURL': item['posterURL'],
+                  })
+              .toList();
+        });
+      } else {
+        print('Failed to load movies: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+  String getImageUrl(String posterURL) {
+    if (posterURL.startsWith('http://') || posterURL.startsWith('https://')) {
+      return posterURL;
+    } else {
+      // ถ้ารูปเป็นแค่ชื่อไฟล์ ให้เติม base url
+      return "http://192.168.126.1/movie_img/$posterURL";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,52 +60,68 @@ class _ComingsoonState extends State<Comingsoon> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: ListView.builder(
-            itemCount: movies.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Detailcoming(
-                        title: movies[index]["title"]!,
-                        imageUrl: movies[index]["image"]!,
-                      ),
-                    ),
-                  );
-                },
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  elevation: 5,
-                  margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-                        child: Image.network(
-                          movies[index]["image"]!,
-                          height: 200, // Set fixed height to prevent stretching
-                          fit: BoxFit.cover,
+          child: movies.isEmpty
+              ? Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  itemCount: movies.length,
+                  itemBuilder: (context, index) {
+                    final movie = movies[index];
+                    final imageUrl = getImageUrl(movie["posterURL"] ?? "");
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Detailcoming(
+                              title: movie["mv_name"] ?? "No Title",
+                              imageUrl: imageUrl,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: 5,
+                        margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ClipRRect(
+                              borderRadius:
+                                  BorderRadius.vertical(top: Radius.circular(15)),
+                              child: Image.network(
+                                imageUrl,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 200,
+                                    color: Colors.grey[300],
+                                    child: Icon(Icons.broken_image, size: 60),
+                                  );
+                                },
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                movie["mv_name"] ?? "No Title",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          movies[index]["title"]!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ),
     );

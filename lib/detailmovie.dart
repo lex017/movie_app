@@ -1,12 +1,32 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:movie_app/cash/qr.dart';
 import 'package:movie_app/selectchair.dart';
 
 class MovieDetails extends StatefulWidget {
+  final int movieId; // movie_id from DB
   final String title;
+  final String description;
   final String imageUrl;
+  final int theaters; // theaters_id
+  final int price;
+  final int seat;
+  final String date;
+  final String uid;
+  final String image;
 
-  const MovieDetails({super.key, required this.title, required this.imageUrl});
+  const MovieDetails({
+    super.key,
+    required this.movieId,
+    required this.title,
+    required this.imageUrl,
+    required this.description,
+    required this.theaters,
+    required this.price,
+    required this.seat,
+    required this.date,
+    required this.uid, required this.image,
+  });
 
   @override
   State<MovieDetails> createState() => _MovieDetailsState();
@@ -14,8 +34,40 @@ class MovieDetails extends StatefulWidget {
 
 class _MovieDetailsState extends State<MovieDetails> {
   bool isFavorite = false;
-  List<String> availableTimes = ['10:00 AM', '1:00 PM', '4:00 PM', '7:00 PM', '10:00 PM', '12:00 AM'];
-  String? selectedTime;
+
+  // Store full showtime objects: each contains showtime_id, showt_ime, etc.
+  List<Map<String, dynamic>> availableShowtimes = [];
+
+  int? selectedShowtimeId;        // selected showtime_id
+  String? selectedShowtimeTime;   // selected showtime display time
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchShowtimes();
+  }
+
+  Future<void> fetchShowtimes() async {
+    final url = Uri.parse('http://192.168.126.1:8000/showtime');
+    final res = await http.get(url);
+
+    if (res.statusCode == 200) {
+      final data = json.decode(res.body);
+      final allShowtimes = List<Map<String, dynamic>>.from(data);
+
+      final filtered = allShowtimes.where((show) =>
+          show['theaters_id'] == widget.theaters).toList();
+
+      setState(() {
+        availableShowtimes = filtered;
+        isLoading = false;
+      });
+    } else {
+      throw Exception('Failed to load showtimes');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +101,6 @@ class _MovieDetailsState extends State<MovieDetails> {
       ),
       body: Stack(
         children: [
-          // Background movie image
           Container(
             height: MediaQuery.of(context).size.height * 0.45,
             decoration: BoxDecoration(
@@ -68,8 +119,6 @@ class _MovieDetailsState extends State<MovieDetails> {
               ),
             ),
           ),
-
-          // Draggable movie details sheet
           DraggableScrollableSheet(
             snap: true,
             initialChildSize: 0.6,
@@ -113,7 +162,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        Text(
+                        const Text(
                           "Now in Theaters",
                           style: TextStyle(
                             fontSize: 16,
@@ -125,19 +174,18 @@ class _MovieDetailsState extends State<MovieDetails> {
                         const SizedBox(height: 15),
                       ],
                     ),
-
-                    // Description
-                    Text(
-                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[800],
-                        height: 1.5,
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        widget.description,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // 🎬 Time selection
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -150,41 +198,69 @@ class _MovieDetailsState extends State<MovieDetails> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 10,
-                      children: availableTimes.map((time) {
-                        final isSelected = selectedTime == time;
-                        return ChoiceChip(
-                          label: Text(time),
-                          selected: isSelected,
-                          onSelected: (_) {
-                            setState(() {
-                              selectedTime = time;
-                            });
-                          },
-                          selectedColor: Colors.redAccent,
-                          backgroundColor: Colors.grey[200],
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }).toList(),
+                    Text(
+                      'Theaters ${widget.theaters}',
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 10),
+                    isLoading
+                        ? const CircularProgressIndicator()
+                        : Wrap(
+                            spacing: 10,
+                            children: availableShowtimes.map((showtime) {
+                              final showtimeId = showtime['showtime_id'];
+                              final showtimeStr = showtime['showt_ime'].toString().substring(0, 5);
+                              final isSelected = selectedShowtimeId == showtimeId;
 
+                              return ChoiceChip(
+                                label: Text(showtimeStr),
+                                selected: isSelected,
+                                onSelected: (_) {
+                                  setState(() {
+                                    selectedShowtimeId = showtimeId;
+                                    selectedShowtimeTime = showtimeStr;
+                                  });
+                                },
+                                selectedColor: Colors.redAccent,
+                                backgroundColor: Colors.grey[200],
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              );
+                            }).toList(),
+                          ),
                     const SizedBox(height: 20),
-
-                    // 📅 Book Now button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: selectedTime == null
+                        onPressed: selectedShowtimeId == null
                             ? null
                             : () {
+                                int seatCount = widget.seat;
+                                int columns = 5;
+                                int rows = (seatCount / columns).ceil();
+
+                                List<List<int>> seatLayout = List.generate(rows, (r) {
+                                  return List.generate(columns, (c) {
+                                    int seatNumber = r * columns + c;
+                                    if (seatNumber >= seatCount) return 0;
+                                    return 1;
+                                  });
+                                });
+
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (c) => ChairSelection(
-                                      selectedTime: selectedTime!,
+                                    builder: (context) => ChairSelection(
+                                      selectedTime: selectedShowtimeTime!,
+                                      price: widget.price,
+                                      theaters: widget.theaters,
+                                      seats: seatLayout,
+                                      title: widget.title,
+                                      date: widget.date,
+                                      showtimeId: selectedShowtimeId!,
+                                      uid: widget.uid, image: widget.image,
                                     ),
                                   ),
                                 );

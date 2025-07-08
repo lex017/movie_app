@@ -34,7 +34,12 @@ class _TradeRewardState extends State<TradeReward> {
                 itemBuilder: (context, index) {
                   final candy = widget.selectedCandies[index];
                   return ListTile(
-                    leading: Image.asset(candy['image'], width: 40),
+                    leading: Image.network(
+                      candy['image'],
+                      width: 40,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.image),
+                    ),
                     title: Text(candy['name']),
                     trailing: Text('${candy['points']} pts'),
                   );
@@ -49,11 +54,6 @@ class _TradeRewardState extends State<TradeReward> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
-                final totalPoints = widget.selectedCandies.fold<int>(
-                  0,
-                  (sum, item) => sum + (item['points'] as int),
-                );
-
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -64,10 +64,10 @@ class _TradeRewardState extends State<TradeReward> {
                   ),
                 );
               },
-              icon: const Icon(Icons.redeem),
-              label: const Text('Confirm Trade'),
+              icon: Icon(Icons.redeem,color: Colors.white,),
+              label: Text('Confirm Trade',style: TextStyle(color: Colors.white),),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.red,
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),

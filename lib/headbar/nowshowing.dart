@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:movie_app/detailmovie.dart';
 
 class Nowshowing extends StatefulWidget {
-  const Nowshowing({super.key});
+  final String uid;
+  const Nowshowing({super.key, required this.uid});
 
   @override
   State<Nowshowing> createState() => _NowshowingState();
@@ -22,18 +23,25 @@ class _NowshowingState extends State<Nowshowing> {
   Future<void> fetchMovies() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.198:8000/movie'),
+        Uri.parse('http://192.168.126.1:8000/movie'), 
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        print(data); // Debug: print data
 
         setState(() {
-          movies = data
+           movies = data
+              .where((item) => item['status'] == 'now') 
               .map<Map<String, dynamic>>((item) => {
                     'mv_name': item['mv_name'],
+                    'mv_id': item['mv_id'],
                     'posterURL': item['posterURL'],
+                    'description': item['description'],
+                    'theaters': item['theaters'],
+                    'release_date': item['release_date'],
+                    'price': item['price'],
+                    'seat': item['seat'],
+                    'posterURL': item['posterURL']
                   })
               .toList();
         });
@@ -46,12 +54,10 @@ class _NowshowingState extends State<Nowshowing> {
   }
 
   String getImageUrl(String posterURL) {
-    // Check if posterURL already contains full URL
     if (posterURL.startsWith('http://') || posterURL.startsWith('https://')) {
       return posterURL;
     } else {
-      // If just filename, prepend your base URL
-      return "http://192.168.0.198/movie_img/$posterURL";
+      return "http://192.168.0.198/movie_img/$posterURL"; // 
     }
   }
 
@@ -81,8 +87,15 @@ class _NowshowingState extends State<Nowshowing> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => MovieDetails(
-                            title: movie["mv_name"]!,
-                            imageUrl: imageUrl,
+                            title: movie["mv_name"],
+                            description: movie["description"],
+                            imageUrl: imageUrl, 
+                            theaters: movie["theaters"],
+                            price: movie["price"],
+                            seat: movie["seat"], 
+                            movieId: movie["mv_id"], 
+                            date: movie['release_date'], 
+                            uid: widget.uid, image: movie["posterURL"],
                           ),
                         ),
                       );
@@ -113,7 +126,7 @@ class _NowshowingState extends State<Nowshowing> {
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Text(
-                              movie["mv_name"]!,
+                              movie["mv_name"] ?? "",
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,
