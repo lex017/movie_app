@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:movie_app/homepage.dart';
-import 'package:movie_app/main.dart';
-import 'package:movie_app/mainpage.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'dart:convert';
 
 class DetailTicket extends StatelessWidget {
   final Map<String, dynamic> ticketData;
@@ -24,7 +23,7 @@ class DetailTicket extends StatelessWidget {
   String _formatDate(String dateStr) {
     try {
       DateTime dateTime = DateTime.parse(dateStr).toLocal();
-      return DateFormat('dd/MM/yyyy Time HH:mm').format(dateTime);
+      return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
     } catch (e) {
       return 'Invalid date';
     }
@@ -33,6 +32,13 @@ class DetailTicket extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String imageUrl = ticketData['posterURL'] ?? '';
+
+    // ✅ สร้างข้อมูลที่จะแปลงเป็น QR
+    final qrData = jsonEncode({
+      'ticketId': ticketData['ticket_id'],
+      'uid': uid,
+      'status': ticketData['status'],
+    });
 
     return Scaffold(
       backgroundColor: Colors.grey[200],
@@ -62,15 +68,13 @@ class DetailTicket extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Poster
+                // 🎬 Poster
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   child: SizedBox(
                     height: 200,
                     child: imageUrl.isNotEmpty
-                        ? Image.network(imageUrl,
-                            fit: BoxFit.cover, width: double.infinity)
+                        ? Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity)
                         : Image.network(
                             'https://images.ctfassets.net/3sjsytt3tkv5/48dw0Wqg1t7RMqLrtodjqL/d72b35dae2516fa64803f4de2ab8e30f/Avengers-_Endgame_-_Header_Image.jpeg',
                             fit: BoxFit.cover,
@@ -78,63 +82,63 @@ class DetailTicket extends StatelessWidget {
                           ),
                   ),
                 ),
-                // Details
+
+                // 🎫 Details
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
                       Text(
                         ticketData['mv_name'] ?? 'Unknown Movie',
-                        style: const TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
+
+                      // ✅ QR Code with full JSON data
                       QrImageView(
-                        data: ticketData['ticket_id'].toString(),
+                        data: qrData,
                         version: QrVersions.auto,
-                        size: 150,
+                        size: 160,
                         backgroundColor: Colors.white,
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'QR Data: $qrData',
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+
                       const SizedBox(height: 12),
                       Text(
                         'Show Date: ${_formatDate(ticketData['show_date'] ?? '')}',
-                        style:
-                            const TextStyle(fontSize: 16, color: Colors.grey),
+                        style: const TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                       const SizedBox(height: 20),
 
                       // Info Rows
-                      _buildInfoRow(
-                          'Theater',
-                          ticketData['theaters'].toString(),
-                          'Seat',
-                          ticketData['seat_num']),
+                      _buildInfoRow('Theater', ticketData['theaters'].toString(), 'Seat', ticketData['seat_num']),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Name', ticketData['name'], 'Time',
-                          ticketData['time_b']),
+                      _buildInfoRow('Name', ticketData['name'], 'Time', ticketData['selectedTime']),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Price', '${ticketData['price']} Kip',
-                          'Status', ticketData['status']),
+                      _buildInfoRow('Price', '${ticketData['price']} Kip', 'Status', ticketData['status']),
                       const SizedBox(height: 24),
 
-                      // Back Button
+                      // 🔙 Back Button
                       Center(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
-                          onPressed: () => Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => Homepage(uid: uid)),
-                            (Route<dynamic> route) =>
-                                false, 
-                          ),
+                          onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => Homepage(uid: uid)),
+                              (Route<dynamic> route) => false,
+                            );
+                          },
                           child: const Text(
                             'Back',
                             style: TextStyle(fontSize: 16, color: Colors.white),
@@ -152,8 +156,7 @@ class DetailTicket extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(
-      String label1, String? value1, String label2, String? value2) {
+  Widget _buildInfoRow(String label1, String? value1, String label2, String? value2) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

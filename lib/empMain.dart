@@ -25,7 +25,7 @@ class _EmpMainState extends State<EmpMain> {
 
   Future<void> fetchAdminData(String email) async {
   try {
-    final url = Uri.parse('http://192.168.0.195:8000/admin/email/$email');
+    final url = Uri.parse('http://192.168.0.198:8000/admin/email/$email');
     final response = await http.get(url);
     print('Response status: ${response.statusCode}');
     print('Response body: ${response.body}');

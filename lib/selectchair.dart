@@ -52,7 +52,8 @@ class _ChairSelectionState extends State<ChairSelection> {
 
   Future<void> fetchBookedSeatsFromApi() async {
     try {
-      final url = Uri.parse('http://192.168.0.195:8000/api/booked-seats/${widget.showtimeId}');
+      final url = Uri.parse(
+          'http://192.168.0.198:8000/api/booked-seats/${widget.showtimeId}');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -63,7 +64,10 @@ class _ChairSelectionState extends State<ChairSelection> {
           int row = seatLabel.codeUnitAt(0) - 65;
           int col = int.parse(seatLabel.substring(1)) - 1;
 
-          if (row >= 0 && row < _seats.length && col >= 0 && col < _seats[row].length) {
+          if (row >= 0 &&
+              row < _seats.length &&
+              col >= 0 &&
+              col < _seats[row].length) {
             _seats[row][col] = 0; // 0 = reserved
             print("Seat $seatLabel marked reserved at [$row][$col]");
           }
@@ -95,22 +99,35 @@ class _ChairSelectionState extends State<ChairSelection> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            const Text(
-              "Choose Your Seats",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
             Text('Theaters: ${widget.theaters}'),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity, 
+              padding: EdgeInsets.symmetric(vertical: 12), 
+              decoration: BoxDecoration(
+                color: Colors.redAccent, 
+              ),
+              child: Text(
+                "Screen",
+                textAlign: TextAlign.center, 
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
             Expanded(
               child: Card(
                 color: const Color(0xFF1F1F1F),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
+                      crossAxisCount: 10,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
@@ -127,7 +144,9 @@ class _ChairSelectionState extends State<ChairSelection> {
                         onTap: () {
                           if (isReserved) return;
                           setState(() {
-                            isSelected ? _selectedSeats.remove(seat) : _selectedSeats.add(seat);
+                            isSelected
+                                ? _selectedSeats.remove(seat)
+                                : _selectedSeats.add(seat);
                           });
                         },
                         child: AnimatedContainer(
@@ -166,13 +185,19 @@ class _ChairSelectionState extends State<ChairSelection> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text("Seats: $seatCount", style: const TextStyle(color: Colors.white)),
-                    Text("Price/seat: $seatPrice", style: const TextStyle(color: Colors.white)),
-                    Text("Time: ${widget.selectedTime}", style: const TextStyle(color: Colors.white)),
-                  ]),
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Seats: $seatCount",
+                            style: const TextStyle(color: Colors.white)),
+                        Text("Price/seat: $seatPrice",
+                            style: const TextStyle(color: Colors.white)),
+                        Text("Time: ${widget.selectedTime}",
+                            style: const TextStyle(color: Colors.white)),
+                      ]),
                   Text("Total: $totalPrice kip",
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -206,7 +231,8 @@ class _ChairSelectionState extends State<ChairSelection> {
                 minimumSize: const Size.fromHeight(50),
                 backgroundColor: Colors.red,
               ),
-              child: const Text('Book Now', style: TextStyle(fontSize: 18, color: Colors.white)),
+              child: const Text('Book Now',
+                  style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
           ],
         ),
@@ -222,7 +248,8 @@ class Seat {
   Seat(this.row, this.col);
 
   @override
-  bool operator ==(Object other) => other is Seat && row == other.row && col == other.col;
+  bool operator ==(Object other) =>
+      other is Seat && row == other.row && col == other.col;
 
   @override
   int get hashCode => row.hashCode ^ col.hashCode;

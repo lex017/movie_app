@@ -140,7 +140,7 @@ class _PayState extends State<Pay> {
       return;
     }
 
-    final url = Uri.parse("http://192.168.0.195:8000/ticket");
+    final url = Uri.parse("http://192.168.0.198:8000/ticket");
 
     showDialog(
       context: context,
@@ -205,7 +205,7 @@ class _PayState extends State<Pay> {
           countdown--;
 
           final res = await http
-              .get(Uri.parse("http://192.168.0.195:8000/ticket/$ticketId"));
+              .get(Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
 
           if (res.statusCode == 200) {
             final ticket = jsonDecode(res.body);
@@ -219,7 +219,7 @@ class _PayState extends State<Pay> {
            
               await http.put(
                 Uri.parse(
-                    "http://192.168.0.195:8000/user/updatePoint/${widget.uid}"),
+                    "http://192.168.0.198:8000/user/updatePoint/${widget.uid}"),
                 headers: {'Content-Type': 'application/json'},
                 body: json.encode({'add_point': 10}),
               );
@@ -252,7 +252,7 @@ class _PayState extends State<Pay> {
               Navigator.pop(context);
 
               await http.delete(
-                  Uri.parse("http://192.168.0.195:8000/ticket/$ticketId"));
+                  Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
 
               showDialog(
                 context: dialogContext,
@@ -285,7 +285,7 @@ class _PayState extends State<Pay> {
             Navigator.pop(context);
 
             await http.delete(
-                Uri.parse("http://192.168.0.195:8000/ticket/$ticketId"));
+                Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
 
             ScaffoldMessenger.of(dialogContext).showSnackBar(
               const SnackBar(content: Text('⏰ Verification timed out.')),

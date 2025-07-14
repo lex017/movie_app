@@ -23,24 +23,36 @@ class _TicketState extends State<Ticket> {
     fetchTickets();
   }
 
-  Future<void> fetchTickets() async {
-    try {
-      final response = await http.get(Uri.parse('http://192.168.0.195:8000/tickets'));
+ Future<void> fetchTickets() async {
+  try {
+    final response = await http.get(Uri.parse('http://192.168.0.198:8000/tickets'));
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        setState(() {
-          historyList = data.cast<Map<String, dynamic>>();
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load tickets');
-      }
-    } catch (e) {
-      setState(() => isLoading = false);
-      print('Error fetching tickets: $e');
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+
+      print('Current UID: ${widget.uid}');
+      print('All tickets: $data');
+
+      final filteredData = data.where((ticket) {
+        print('Checking ticket UID: ${ticket['u_id']}');
+        return ticket['u_id'].toString() == widget.uid.toString();
+      }).toList();
+
+      print('Filtered tickets: $filteredData');
+
+      setState(() {
+        historyList = filteredData.cast<Map<String, dynamic>>();
+        isLoading = false;
+      });
+    } else {
+      throw Exception('Failed to load tickets');
     }
+  } catch (e) {
+    setState(() => isLoading = false);
+    print('Error fetching tickets: $e');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

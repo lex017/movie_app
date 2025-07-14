@@ -32,7 +32,7 @@ class _LoginState extends State<Login> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.195:8000/login'), // Update your IP
+        Uri.parse('http://192.168.0.198:8000/login'), // Update your IP
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'u_email': email, 'u_password': password}),
       );

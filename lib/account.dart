@@ -50,7 +50,7 @@ class _AccountState extends State<Account> {
   Future<void> fetchUser() async {
     if (userId == null) return;
     try {
-      final res = await http.get(Uri.parse('http://192.168.0.195:8000/user/$userId'));
+      final res = await http.get(Uri.parse('http://192.168.0.198:8000/user/$userId'));
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         setState(() {
@@ -140,7 +140,7 @@ class _AccountState extends State<Account> {
       };
 
       final res = await http.put(
-        Uri.parse("http://192.168.0.195:8000/user/$userId"),
+        Uri.parse("http://192.168.0.198:8000/user/$userId"),
         headers: {"Content-Type": "application/json"},
         body: json.encode(updatedUser),
       );

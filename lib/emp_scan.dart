@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'package:movie_app/cash/scanpoint.dart';
-import 'check.dart'; // หรือเปลี่ยนเป็น DetailTicket page
+import 'check.dart';
 
 class ScanPage extends StatefulWidget {
   final String userId;
@@ -14,74 +14,71 @@ class ScanPage extends StatefulWidget {
 }
 
 class _ScanPageState extends State<ScanPage> {
-  String? scannedCode;
   bool isScanned = false;
   final MobileScannerController _controller = MobileScannerController();
 
   void handleBarcode(BarcodeCapture capture) async {
   if (!isScanned && capture.barcodes.isNotEmpty) {
-    final String code = capture.barcodes.first.rawValue ?? '---';
-    setState(() {
-      scannedCode = code;
-      isScanned = true;
-    });
-
+    final String code = capture.barcodes.first.rawValue ?? '';
+    setState(() => isScanned = true);
     _controller.stop();
 
     try {
-      final data = json.decode(code); // QR contains JSON: {"ticketId": 123}
-      final ticketId = data['ticketId'];
+      final data = json.decode(code);
 
-      final res = await http.get(
-        Uri.parse('http://192.168.0.195:8000/ticket/$ticketId'),
-      );
+      // 🎟 Ticket QR logic
+      if (data.containsKey('ticketId')) {
+        final ticketId = data['ticketId'];
 
-      if (res.statusCode == 200) {
-        final ticket = json.decode(res.body);
-        final status = ticket['status'];
+        final res = await http.get(
+          Uri.parse('http://192.168.0.198:8000/ticket/$ticketId'),
+        );
 
-        if (status == 'paid') {
-          // ✅ ไปหน้า Check หรือ DetailTicket page
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const Check(), 
-              ),
-            );
+        if (res.statusCode == 200) {
+          final ticket = json.decode(res.body);
+          if (ticket['status'] == 'paid') {
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Check(ticketId: ticketId.toString()),
+                ),
+              );
+            }
+          } else {
+            _showMessage("❌ Ticket is not paid");
           }
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RedeemPointsPage(userId: widget.userId),
-            ),
-          );
+          _showMessage("❌ Ticket not found");
         }
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RedeemPointsPage(userId: widget.userId),
-          ),
-        );
+      }
+
+      // 🎁 Reward QR logic
+      else if (data.containsKey('u_id') && data.containsKey('r_point')) {
+  final userId = data['u_id'].toString();
+  final rewardPoint = data['r_point'];
+
+  if (mounted) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RedeemPointsPage(
+          userId: userId,
+          rewardId: rewardPoint.toString(), // or handle rewardPoint accordingly
+        ),
+      ),
+    );
+  }
+}
+ else {
+        _showMessage("❌ Unrecognized QR");
       }
     } catch (e) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RedeemPointsPage(userId: widget.userId),
-        ),
-      );
+      _showMessage("❌ Invalid QR or error: $e");
     }
   }
 }
 
-
-  void _restartScan() {
-    setState(() => isScanned = false);
-    _controller.start();
-  }
 
   void _showMessage(String message) {
     if (mounted) {
@@ -118,25 +115,25 @@ class _ScanPageState extends State<ScanPage> {
             controller: _controller,
             onDetect: handleBarcode,
           ),
+          Center(
+            child: CustomPaint(
+              painter: ScannerOverlay(),
+              child: const SizedBox.expand(),
+            ),
+          ),
           Align(
             alignment: Alignment.topCenter,
             child: Container(
-              padding: const EdgeInsets.all(10),
-              margin: const EdgeInsets.only(top: 20),
+              margin: const EdgeInsets.only(top: 40),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
-                'Point your camera at a QR code',
+                'Scan your ticket QR code',
                 style: TextStyle(color: Colors.white),
               ),
-            ),
-          ),
-          Center(
-            child: CustomPaint(
-              painter: ScannerOverlay(),
-              child: const SizedBox.expand(),
             ),
           ),
         ],
@@ -172,6 +169,7 @@ class ScannerOverlay extends CustomPainter {
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
+
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromCenter(
@@ -186,5 +184,5 @@ class ScannerOverlay extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

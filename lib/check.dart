@@ -1,30 +1,27 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class Check extends StatefulWidget {
-  const Check({super.key});
+  final String ticketId;
+  const Check({super.key, required this.ticketId});
 
   @override
   State<Check> createState() => _CheckState();
 }
 
 class _CheckState extends State<Check> {
-  final TextEditingController _ticketIdController = TextEditingController();
   Map<String, dynamic>? ticketData;
-  bool isLoading = false;
+  bool isLoading = true;
   bool isVerifying = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchTicket();
+  }
+
   Future<void> _fetchTicket() async {
-    final ticketId = _ticketIdController.text.trim();
-
-    if (ticketId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❗ Please enter ticket ID')),
-      );
-      return;
-    }
-
     setState(() {
       isLoading = true;
       ticketData = null;
@@ -32,7 +29,7 @@ class _CheckState extends State<Check> {
 
     try {
       final res = await http.get(
-        Uri.parse('http://192.168.0.195:8000/ticket/$ticketId'),
+        Uri.parse('http://192.168.0.198:8000/ticket/${widget.ticketId}'),
       );
 
       if (res.statusCode == 200) {
@@ -40,101 +37,139 @@ class _CheckState extends State<Check> {
           ticketData = json.decode(res.body);
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Ticket not found')),
-        );
+        _showSnackBar('❌ Ticket not found');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error: $e')),
-      );
+      _showSnackBar('❌ Error: $e');
     } finally {
       setState(() => isLoading = false);
     }
   }
 
   Future<void> _verifyCheckIn() async {
-    final ticketId = _ticketIdController.text.trim();
-
     setState(() => isVerifying = true);
 
     try {
       final res = await http.put(
-        Uri.parse('http://192.168.0.195:8000/ticket/$ticketId'),
+        Uri.parse('http://192.168.0.198:8000/ticket/${widget.ticketId}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'status': 'check-in'}),
       );
 
       if (res.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Ticket status updated to check-in')),
-        );
-        _fetchTicket(); // Refresh ticket data
+        _showSnackBar('✅ Ticket checked-in successfully');
+        await _fetchTicket(); // Refresh ticket data
       } else {
         final error = jsonDecode(res.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Failed: ${error['error'] ?? 'Unknown error'}')),
-        );
+        _showSnackBar('❌ Failed: ${error['error'] ?? 'Unknown error'}');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error: $e')),
-      );
+      _showSnackBar('❌ Error: $e');
     } finally {
       setState(() => isVerifying = false);
+    }
+  }
+
+  void _showSnackBar(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify Ticket')),
+      appBar: AppBar(
+        title: const Text('🎫 Verify Ticket'),
+        backgroundColor: Colors.redAccent,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _ticketIdController,
-              decoration: InputDecoration(
-                labelText: 'Enter Ticket ID',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _fetchTicket,
-                ),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 20),
-            if (isLoading)
-              const CircularProgressIndicator()
-            else if (ticketData != null) ...[
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Text("🎬 ${ticketData!['mv_name']}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Text("Showtime: ${ticketData!['show_date']} at ${ticketData!['selectedTime']}"),
-                      Text("Name: ${ticketData!['name']}"),
-                      Text("Price: ${ticketData!['price']}"),
-                      Text("Status: ${ticketData!['status']}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle),
-                        label: const Text("Mark as Check-in"),
-                        onPressed: ticketData!['status'] == 'paid' && !isVerifying ? _verifyCheckIn : null,
+        padding: const EdgeInsets.all(20),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ticketData == null
+                ? const Center(child: Text('No ticket data found.'))
+                : SingleChildScrollView(
+                    child: Card(
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Text(
+                                "🎬 ${ticketData!['mv_name'] ?? 'Movie'}",
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Divider(),
+                            _buildRow('🎟 Ticket ID:', ticketData!['ticket_id'].toString()),
+                            _buildRow('🗓 Showtime:',
+                                '${ticketData!['show_date']} at ${ticketData!['selectedTime']}'),
+                            _buildRow('👤 Name:', ticketData!['name']),
+                            _buildRow('💺 Seat:', ticketData!['seat_num']),
+                            _buildRow('💰 Price:', '${ticketData!['price']} Kip'),
+                            _buildRow('📍 Theater:', ticketData!['theaters'].toString()),
+                            _buildRow(
+                              '✅ Status:',
+                              ticketData!['status'],
+                              bold: true,
+                              color: ticketData!['status'] == 'check-in'
+                                  ? Colors.green
+                                  : Colors.orange,
+                            ),
+                            const SizedBox(height: 24),
+                            Center(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.check),
+                                label: const Text("Mark as Check-in"),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(50),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                                onPressed: ticketData!['status'] == 'paid' && !isVerifying
+                                    ? _verifyCheckIn
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              )
-            ]
-          ],
-        ),
+      ),
+    );
+  }
+
+  Widget _buildRow(String label, String? value,
+      {bool bold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+              flex: 2,
+              child: Text(label,
+                  style: const TextStyle(fontWeight: FontWeight.w500))),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(
+                fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+                color: color ?? Colors.black,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

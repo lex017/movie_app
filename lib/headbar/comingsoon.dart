@@ -21,7 +21,7 @@ class _ComingsoonState extends State<Comingsoon> {
   Future<void> fetchMovies() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.126.1:8000/movie'), // เปลี่ยนเป็น URL API ของคุณ
+        Uri.parse('http://192.168.0.198:8000/movie'), // เปลี่ยนเป็น URL API ของคุณ
       );
 
       if (response.statusCode == 200) {
@@ -49,7 +49,7 @@ class _ComingsoonState extends State<Comingsoon> {
       return posterURL;
     } else {
       // ถ้ารูปเป็นแค่ชื่อไฟล์ ให้เติม base url
-      return "http://192.168.126.1/movie_img/$posterURL";
+      return "http://192.168.0.198/movie_img/$posterURL";
     }
   }
 

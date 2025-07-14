@@ -17,9 +17,9 @@ class TicketReward extends StatelessWidget {
   Widget build(BuildContext context) {
     // Encode ticket data to JSON string for QR
     final ticketData = jsonEncode({
-      'userId':uid,
+      'u_id':uid,
       'candies': selectedCandies.map((e) => e['name']).toList(),
-      'points': totalPoints,
+      'r_point': totalPoints,
       'timestamp': DateTime.now().toIso8601String(),
     });
 
