@@ -140,7 +140,7 @@ class _PayState extends State<Pay> {
       return;
     }
 
-    final url = Uri.parse("http://192.168.126.1:8000/ticket");
+    final url = Uri.parse("http://192.168.0.195:8000/ticket");
 
     showDialog(
       context: context,
@@ -189,153 +189,165 @@ class _PayState extends State<Pay> {
     }
   }
 
+  Future<void> _waitForVerification(int ticketId) async {
+    int countdown = 300;
+    bool isVerified = false;
+    bool isRejected = false;
+    Timer? timer;
+    late StateSetter dialogSetState;
+    BuildContext dialogContext = context;
 
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        timer = Timer.periodic(const Duration(seconds: 1), (t) async {
+          countdown--;
 
-Future<void> _waitForVerification(int ticketId) async {
-  int countdown = 300;
-  bool isVerified = false;
-  bool isRejected = false;
-  Timer? timer;
-  late StateSetter dialogSetState;
-  BuildContext dialogContext = context;
+          final res = await http
+              .get(Uri.parse("http://192.168.0.195:8000/ticket/$ticketId"));
 
-  await showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) {
-      timer = Timer.periodic(const Duration(seconds: 1), (t) async {
-        countdown--;
+          if (res.statusCode == 200) {
+            final ticket = jsonDecode(res.body);
+            final status = ticket['status'];
 
-        final res = await http.get(Uri.parse("http://192.168.126.1:8000/ticket/$ticketId"));
+            if (status == 'paid') {
+              isVerified = true;
+              timer?.cancel();
+              Navigator.pop(context);
 
-        if (res.statusCode == 200) {
-          final ticket = jsonDecode(res.body);
-          final status = ticket['status'];
+           
+              await http.put(
+                Uri.parse(
+                    "http://192.168.0.195:8000/user/updatePoint/${widget.uid}"),
+                headers: {'Content-Type': 'application/json'},
+                body: json.encode({'add_point': 10}),
+              );
 
-          if (status == 'paid') {
-            isVerified = true;
-            timer?.cancel();
-            Navigator.pop(context);
-
-            Navigator.pushReplacement(
-              dialogContext,
-              MaterialPageRoute(
-                builder: (context) => DetailTicket(
-                  movieData: {
-                    'mv_name': ticket['mv_name'],
-                    'show_date': ticket['show_date'],
-                    'selectedTime': ticket['selectedTime'],
-                  },
-                  paymentData: {
-                    'price': ticket['price'],
-                    'image': ticket['image'],
-                    'time_b': ticket['time_b'],
-                    'name': ticket['name'],
-                  },
-                  ticketData: ticket,
-                  image: ticket['posterURL'],
-                  uid: widget.uid,
-                ),
-              ),
-            );
-            return;
-          } else if (status == 'rejected') {
-            isRejected = true;
-            timer?.cancel();
-            Navigator.pop(context);
-
-            await http.delete(Uri.parse("http://192.168.126.1:8000/ticket/$ticketId"));
-
-            showDialog(
-              context: dialogContext,
-              builder: (_) => AlertDialog(
-                title: const Text('❌ Payment Rejected'),
-                content: const Text('Your payment was rejected. Please try again.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop();
-                      Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => Homepage(uid: widget.uid)),
-                        (route) => false,
-                      );
+              Navigator.pushReplacement(
+                dialogContext,
+                MaterialPageRoute(
+                  builder: (context) => DetailTicket(
+                    movieData: {
+                      'mv_name': ticket['mv_name'],
+                      'show_date': ticket['show_date'],
+                      'selectedTime': ticket['selectedTime'],
                     },
-                    child: const Text('OK'),
-                  )
+                    paymentData: {
+                      'price': ticket['price'],
+                      'image': ticket['image'],
+                      'time_b': ticket['time_b'],
+                      'name': ticket['name'],
+                    },
+                    ticketData: ticket,
+                    image: ticket['posterURL'],
+                    uid: widget.uid,
+                  ),
+                ),
+              );
+              return;
+            } else if (status == 'rejected') {
+              isRejected = true;
+              timer?.cancel();
+              Navigator.pop(context);
+
+              await http.delete(
+                  Uri.parse("http://192.168.0.195:8000/ticket/$ticketId"));
+
+              showDialog(
+                context: dialogContext,
+                builder: (_) => AlertDialog(
+                  title: const Text('❌ Payment Rejected'),
+                  content: const Text(
+                      'Your payment was rejected. Please try again.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        Navigator.of(dialogContext, rootNavigator: true)
+                            .pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => Homepage(uid: widget.uid)),
+                          (route) => false,
+                        );
+                      },
+                      child: const Text('OK'),
+                    )
+                  ],
+                ),
+              );
+              return;
+            }
+          }
+
+          if (countdown <= 0 && !isVerified && !isRejected) {
+            timer?.cancel();
+            Navigator.pop(context);
+
+            await http.delete(
+                Uri.parse("http://192.168.0.195:8000/ticket/$ticketId"));
+
+            ScaffoldMessenger.of(dialogContext).showSnackBar(
+              const SnackBar(content: Text('⏰ Verification timed out.')),
+            );
+
+            Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
+              MaterialPageRoute(
+                  builder: (context) => Homepage(uid: widget.uid)),
+              (route) => false,
+            );
+          }
+
+          dialogSetState(() {});
+        });
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            dialogSetState = setState;
+            final minutes = (countdown ~/ 60).toString().padLeft(2, '0');
+            final seconds = (countdown % 60).toString().padLeft(2, '0');
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: const [
+                  Icon(Icons.timer, color: Colors.deepOrange),
+                  SizedBox(width: 10),
+                  Text("Waiting for Verification"),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Lottie.network(
+                    'https://assets9.lottiefiles.com/packages/lf20_x62chJ.json',
+                    height: 100,
+                    width: 100,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text("Please complete your payment within:"),
+                  Text(
+                    "$minutes:$seconds",
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text("Waiting for admin to verify payment..."),
                 ],
               ),
             );
-            return;
-          }
-        }
+          },
+        );
+      },
+    );
 
-        if (countdown <= 0 && !isVerified && !isRejected) {
-          timer?.cancel();
-          Navigator.pop(context);
-
-          await http.delete(Uri.parse("http://192.168.126.1:8000/ticket/$ticketId"));
-
-          ScaffoldMessenger.of(dialogContext).showSnackBar(
-            const SnackBar(content: Text('⏰ Verification timed out.')),
-          );
-
-          Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => Homepage(uid: widget.uid)),
-            (route) => false,
-          );
-        }
-
-        dialogSetState(() {});
-      });
-
-      return StatefulBuilder(
-        builder: (context, setState) {
-          dialogSetState = setState;
-          final minutes = (countdown ~/ 60).toString().padLeft(2, '0');
-          final seconds = (countdown % 60).toString().padLeft(2, '0');
-
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: const [
-                Icon(Icons.timer, color: Colors.deepOrange),
-                SizedBox(width: 10),
-                Text("Waiting for Verification"),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Lottie.network(
-  'https://assets9.lottiefiles.com/packages/lf20_x62chJ.json',
-  height: 100,
-  width: 100,
-  fit: BoxFit.contain,
-),
-
-                const SizedBox(height: 10),
-                const Text("Please complete your payment within:"),
-                Text(
-                  "$minutes:$seconds",
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text("Waiting for admin to verify payment..."),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-
-  timer?.cancel();
-}
-
+    timer?.cancel();
+  }
 
   @override
   Widget build(BuildContext context) {

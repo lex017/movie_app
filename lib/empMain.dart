@@ -25,7 +25,7 @@ class _EmpMainState extends State<EmpMain> {
 
   Future<void> fetchAdminData(String email) async {
   try {
-    final url = Uri.parse('http://192.168.126.1:8000/admin/email/$email');
+    final url = Uri.parse('http://192.168.0.195:8000/admin/email/$email');
     final response = await http.get(url);
     print('Response status: ${response.statusCode}');
     print('Response body: ${response.body}');
@@ -64,7 +64,7 @@ class _EmpMainState extends State<EmpMain> {
 
   if (result != null) {
     print('Scanned QR Code: $result');
-    // TODO: ทำอย่างอื่นกับ result ที่สแกนได้
+
   }
 }
 

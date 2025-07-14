@@ -3,7 +3,8 @@ import 'package:movie_app/cash/ticket_reward.dart';
 
 class TradeReward extends StatefulWidget {
   final List<Map<String, dynamic>> selectedCandies;
-  const TradeReward({super.key, required this.selectedCandies});
+   final String uid;
+  const TradeReward({super.key, required this.selectedCandies, required this.uid});
 
   @override
   State<TradeReward> createState() => _TradeRewardState();
@@ -59,7 +60,7 @@ class _TradeRewardState extends State<TradeReward> {
                   MaterialPageRoute(
                     builder: (context) => TicketReward(
                       selectedCandies: widget.selectedCandies,
-                      totalPoints: totalPoints,
+                      totalPoints: totalPoints, uid: widget.uid,
                     ),
                   ),
                 );

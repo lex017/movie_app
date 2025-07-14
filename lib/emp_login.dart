@@ -28,7 +28,7 @@ class _EmpLoginState extends State<EmpLogin> {
     final password = _passwordController.text;
 
     try {
-      final url = Uri.parse('http://192.168.126.1:8000/admin/login');
+      final url = Uri.parse('http://192.168.0.195:8000/admin/login');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

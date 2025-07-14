@@ -22,11 +22,11 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Future<void> fetchHistory() async {
   try {
-    final ticketResponse = await http.get(Uri.parse("http://192.168.126.1:8000/tickets?uid=${widget.uid}"));
+    final ticketResponse = await http.get(Uri.parse("http://192.168.0.195:8000/tickets?uid=${widget.uid}"));
     print('Tickets status: ${ticketResponse.statusCode}');
     print('Tickets body: ${ticketResponse.body}');
 
-    final rewardResponse = await http.get(Uri.parse("http://192.168.126.1:8000/reward?uid=${widget.uid}"));
+    final rewardResponse = await http.get(Uri.parse("http://192.168.0.195:8000/reward?uid=${widget.uid}"));
     print('Rewards status: ${rewardResponse.statusCode}');
     print('Rewards body: ${rewardResponse.body}');
 

@@ -5,17 +5,19 @@ import 'dart:convert';
 class TicketReward extends StatelessWidget {
   final List<Map<String, dynamic>> selectedCandies;
   final int totalPoints;
+  final String uid;
 
   const TicketReward({
     super.key,
     required this.selectedCandies,
-    required this.totalPoints,
+    required this.totalPoints, required this.uid,
   });
 
   @override
   Widget build(BuildContext context) {
     // Encode ticket data to JSON string for QR
     final ticketData = jsonEncode({
+      'userId':uid,
       'candies': selectedCandies.map((e) => e['name']).toList(),
       'points': totalPoints,
       'timestamp': DateTime.now().toIso8601String(),

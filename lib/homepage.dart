@@ -24,7 +24,7 @@ class _HomepageState extends State<Homepage> {
 
   Widget BNavigateBar(int selectIdx, Function(int) onTabTapped) {
     return Container(
-      height: 80,
+      height: 120,
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: const BorderRadius.only(

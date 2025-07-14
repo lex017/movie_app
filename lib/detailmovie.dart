@@ -50,7 +50,7 @@ class _MovieDetailsState extends State<MovieDetails> {
   }
 
   Future<void> fetchShowtimes() async {
-    final url = Uri.parse('http://192.168.126.1:8000/showtime');
+    final url = Uri.parse('http://192.168.0.195:8000/showtime');
     final res = await http.get(url);
 
     if (res.statusCode == 200) {
