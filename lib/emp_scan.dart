@@ -18,71 +18,76 @@ class _ScanPageState extends State<ScanPage> {
   final MobileScannerController _controller = MobileScannerController();
 
   void handleBarcode(BarcodeCapture capture) async {
-  if (!isScanned && capture.barcodes.isNotEmpty) {
-    final String code = capture.barcodes.first.rawValue ?? '';
-    setState(() => isScanned = true);
-    _controller.stop();
+    if (!isScanned && capture.barcodes.isNotEmpty) {
+      final String code = capture.barcodes.first.rawValue ?? '';
+      setState(() => isScanned = true);
+      _controller.stop();
 
-    try {
-      final data = json.decode(code);
+      try {
+        final data = json.decode(code);
 
-      // 🎟 Ticket QR logic
-      if (data.containsKey('ticketId')) {
-        final ticketId = data['ticketId'];
+        // 🎟 Ticket QR logic
+        if (data.containsKey('ticketId')) {
+          final ticketId = data['ticketId'];
 
-        final res = await http.get(
-          Uri.parse('http://192.168.0.198:8000/ticket/$ticketId'),
-        );
+          final res = await http.get(
+            Uri.parse('http://192.168.0.198:8000/ticket/$ticketId'),
+          );
 
-        if (res.statusCode == 200) {
-          final ticket = json.decode(res.body);
-          if (ticket['status'] == 'paid') {
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => Check(ticketId: ticketId.toString()),
-                ),
-              );
+          if (res.statusCode == 200) {
+            final ticket = json.decode(res.body);
+            if (ticket['status'] == 'paid') {
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => Check(ticketId: ticketId.toString()),
+                  ),
+                );
+              }
+            } else {
+              _showMessage("❌ Ticket is not paid");
             }
           } else {
-            _showMessage("❌ Ticket is not paid");
+            _showMessage("❌ Ticket not found");
+          }
+        }
+
+        // 🎁 Reward QR logic
+        else if (data.containsKey('u_id') && data.containsKey('point')) {
+          final userId = data['u_id'].toString();
+          final totalPoints = data['point'];
+          final candies = List<String>.from(data['candies'] ?? []);
+
+          final selectedCandies =
+              candies.map((name) => {"name": name}).toList();
+
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RedeemPointsPage(
+                  userId: userId,
+                 
+                  selectedCandies: selectedCandies,
+                  totalPoints: totalPoints,
+                ),
+              ),
+            );
           }
         } else {
-          _showMessage("❌ Ticket not found");
+          _showMessage("❌ Unrecognized QR");
         }
+      } catch (e) {
+        _showMessage("❌ Invalid QR or error: $e");
       }
-
-      // 🎁 Reward QR logic
-      else if (data.containsKey('u_id') && data.containsKey('r_point')) {
-  final userId = data['u_id'].toString();
-  final rewardPoint = data['r_point'];
-
-  if (mounted) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => RedeemPointsPage(
-          userId: userId,
-          rewardId: rewardPoint.toString(), // or handle rewardPoint accordingly
-        ),
-      ),
-    );
-  }
-}
- else {
-        _showMessage("❌ Unrecognized QR");
-      }
-    } catch (e) {
-      _showMessage("❌ Invalid QR or error: $e");
     }
   }
-}
-
 
   void _showMessage(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

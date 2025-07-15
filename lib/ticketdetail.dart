@@ -119,6 +119,8 @@ class DetailTicket extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildInfoRow('Price', '${ticketData['price']} Kip', 'Status', ticketData['status']),
                       const SizedBox(height: 24),
+                  
+
 
                       // 🔙 Back Button
                       Center(

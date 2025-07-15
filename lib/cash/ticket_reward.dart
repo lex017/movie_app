@@ -19,7 +19,7 @@ class TicketReward extends StatelessWidget {
     final ticketData = jsonEncode({
       'u_id':uid,
       'candies': selectedCandies.map((e) => e['name']).toList(),
-      'r_point': totalPoints,
+      'point': totalPoints,
       'timestamp': DateTime.now().toIso8601String(),
     });
 

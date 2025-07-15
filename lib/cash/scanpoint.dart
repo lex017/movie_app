@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:qr_flutter/qr_flutter.dart';
 
 class RedeemPointsPage extends StatefulWidget {
   final String userId;
-  final String rewardId;
+  final List<Map<String, dynamic>> selectedCandies;
+  final int totalPoints;
 
   const RedeemPointsPage({
     super.key,
     required this.userId,
-    required this.rewardId,
+    required this.selectedCandies,
+    required this.totalPoints,
   });
 
   @override
@@ -17,19 +20,17 @@ class RedeemPointsPage extends StatefulWidget {
 }
 
 class _RedeemPointsPageState extends State<RedeemPointsPage> {
-  bool isLoading = false;
-  int? currentPoints;
-  int? pointsToDeduct;
+  bool isLoading = true;
+  int? userPoints;
+  bool redeemed = false;
 
   @override
   void initState() {
     super.initState();
     _fetchUserPoints();
-    _fetchRewardPoints();
   }
 
   Future<void> _fetchUserPoints() async {
-    setState(() => isLoading = true);
     try {
       final res = await http.get(
         Uri.parse('http://192.168.0.198:8000/user/${widget.userId}'),
@@ -37,76 +38,44 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
       if (res.statusCode == 200) {
         final user = json.decode(res.body);
         setState(() {
-          currentPoints = user['col_points'] ?? 0;
+          userPoints = user['point'] ?? 0;
         });
       } else {
-        _showMessage('❌ User not found');
+        _showMessage('Failed to fetch points');
       }
     } catch (e) {
-      _showMessage('❌ Error fetching user points: $e');
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-
-  Future<void> _fetchRewardPoints() async {
-    setState(() => isLoading = true);
-    try {
-      // ตัวอย่าง: เรียก API เพื่อดึงคะแนนที่ต้องใช้สำหรับ reward นี้
-      final res = await http.get(
-        Uri.parse('http://192.168.0.198:8000/reward/${widget.rewardId}'),
-      );
-      if (res.statusCode == 200) {
-        final reward = json.decode(res.body);
-        setState(() {
-          pointsToDeduct = reward['required_points'] ?? 0;
-        });
-      } else {
-        // กรณี API ไม่ตอบกลับ ให้ตั้งค่า default (หรือแจ้ง error)
-        setState(() {
-          pointsToDeduct = 5;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        pointsToDeduct = 5;
-      });
-      _showMessage('❌ Error fetching reward points: $e');
+      _showMessage('Error: $e');
     } finally {
       setState(() => isLoading = false);
     }
   }
 
   Future<void> _redeemPoints() async {
-    if (currentPoints == null || pointsToDeduct == null) return;
-
-    if (currentPoints! < pointsToDeduct!) {
-      _showMessage('❌ Not enough points (current: $currentPoints)');
+    if (userPoints == null || userPoints! < widget.totalPoints) {
+      _showMessage('Not enough points');
       return;
     }
 
     setState(() => isLoading = true);
-
-    final newPoints = currentPoints! - pointsToDeduct!;
+    final newPoints = userPoints! - widget.totalPoints;
 
     try {
       final res = await http.put(
         Uri.parse('http://192.168.0.198:8000/user/${widget.userId}'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'col_points': newPoints}),
+        body: json.encode({'point': newPoints}),
       );
-
       if (res.statusCode == 200) {
         setState(() {
-          currentPoints = newPoints;
-          pointsToDeduct = 0;
+          redeemed = true;
+          userPoints = newPoints;
         });
-        _showMessage('✅ Points deducted successfully! New points: $newPoints');
+        _showMessage('Points redeemed!');
       } else {
-        _showMessage('❌ Failed to deduct points');
+        _showMessage('Redeem failed');
       }
     } catch (e) {
-      _showMessage('❌ Error: $e');
+      _showMessage('Error: $e');
     } finally {
       setState(() => isLoading = false);
     }
@@ -114,44 +83,158 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
 
   void _showMessage(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
+      SnackBar(content: Text(msg)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final ticketData = jsonEncode({
+      'u_id': widget.userId,
+      'candies': widget.selectedCandies.map((e) => e['name']).toList(),
+      'point': widget.totalPoints,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Redeem Points'),
-        backgroundColor: Colors.green,
+        title: const Text('Redeem Rewards'),
+        backgroundColor: Colors.redAccent,
       ),
-      body: Center(
-        child: (isLoading && (currentPoints == null || pointsToDeduct == null))
-            ? const CircularProgressIndicator()
-            : Card(
-                margin: const EdgeInsets.all(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('User ID: ${widget.userId}', style: const TextStyle(fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Text('Current Points: ${currentPoints ?? "-"}', style: const TextStyle(fontSize: 18)),
-                      const SizedBox(height: 8),
-                      Text('Points to Redeem: ${pointsToDeduct ?? "-"}', style: const TextStyle(fontSize: 18, color: Colors.red)),
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: (isLoading || currentPoints == null || pointsToDeduct == null || currentPoints! < pointsToDeduct!)
-                            ? null
-                            : _redeemPoints,
-                        icon: const Icon(Icons.redeem),
-                        label: const Text('Redeem Points'),
-                      ),
-                    ],
-                  ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : redeemed
+              ? _buildQrView(ticketData)
+              : _buildRedeemView(),
+    );
+  }
+
+  Widget _buildRedeemView() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          _infoCard(
+            icon: Icons.account_circle,
+            label: 'Current Points',
+            value: '${userPoints ?? '-'}',
+          ),
+          const SizedBox(height: 16),
+          _infoCard(
+            icon: Icons.redeem,
+            label: 'Points Required',
+            value: '${widget.totalPoints}',
+            valueColor: Colors.redAccent,
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _redeemPoints,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
+                elevation: 6,
               ),
+              child: Text(
+                'Redeem & Generate QR',
+                style: TextStyle(fontSize: 18, letterSpacing: 1.1),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        leading: Icon(icon, size: 36, color: Colors.redAccent),
+        title: Text(label, style: const TextStyle(fontSize: 16)),
+        trailing: Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: valueColor ?? Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQrView(String data) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Text(
+            '🎉 Your Reward QR',
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Colors.redAccent.shade700,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Card(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            elevation: 8,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: QrImageView(
+                data: data,
+                version: QrVersions.auto,
+                size: 260,
+                backgroundColor: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Items: ${widget.selectedCandies.map((e) => e['name']).join(', ')}',
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Points Used: ${widget.totalPoints}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.redAccent.shade700,
+            ),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('Back', style: TextStyle(fontSize: 18)),
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 6,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

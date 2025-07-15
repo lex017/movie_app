@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:movie_app/emp_login.dart';
 import 'package:movie_app/homepage.dart';
 import 'package:movie_app/register.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
@@ -16,8 +18,9 @@ class _LoginState extends State<Login> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool isLoading = false;
+  String? userId; // <-- to pass to EmpLogin
 
-   Future<void> _login() async {
+  Future<void> _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -32,30 +35,28 @@ class _LoginState extends State<Login> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.198:8000/login'), // Update your IP
+        Uri.parse('http://192.168.0.198:8000/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'u_email': email, 'u_password': password}),
       );
 
       if (response.statusCode == 200) {
-  final data = json.decode(response.body);
-  final String uId = data['u_id'].toString(); // ✅ FIXED
-  final String uName = data['u_name'];
+        final data = json.decode(response.body);
+        userId = data['u_id'].toString(); // <-- store for reuse
+        final uName = data['u_name'];
 
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('u_id', uId);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('u_id', userId!);
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Login successful!')),
-  );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
 
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => Homepage(uid: uId)),
-    (route) => false,
-  );
-
-
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => Homepage(uid: userId!)),
+          (route) => false,
+        );
       } else {
         final err = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -70,7 +71,6 @@ class _LoginState extends State<Login> {
       setState(() => isLoading = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -129,13 +129,8 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text(
-                                'Login',
-                                style: TextStyle(fontSize: 16),
-                              ),
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Login', style: TextStyle(fontSize: 16)),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -150,6 +145,28 @@ class _LoginState extends State<Login> {
                         'Don\'t have an account? Register',
                         style: TextStyle(color: Colors.blue),
                       ),
+                    ),
+
+                    // ✅ NEW: Employee QR Scan Button
+                    const Divider(height: 30),
+                    ListTile(
+                      leading: const Icon(Icons.qr_code_scanner, color: Colors.black87),
+                      title: const Text("EmployeeID"),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        if (userId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EmpLogin(uid: userId!),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('User ID not found. Please login first.')),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),

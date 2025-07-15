@@ -14,6 +14,7 @@ class MovieDetails extends StatefulWidget {
   final String date;
   final String uid;
   final String image;
+  final int duration;
 
   const MovieDetails({
     super.key,
@@ -25,7 +26,7 @@ class MovieDetails extends StatefulWidget {
     required this.price,
     required this.seat,
     required this.date,
-    required this.uid, required this.image,
+    required this.uid, required this.image, required this.duration,
   });
 
   @override
@@ -172,6 +173,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 15),
+                        Text("Duration : ${widget.duration} Hour")
                       ],
                     ),
                     Padding(

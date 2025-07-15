@@ -41,7 +41,8 @@ class _NowshowingState extends State<Nowshowing> {
                     'release_date': item['release_date'],
                     'price': item['price'],
                     'seat': item['seat'],
-                    'posterURL': item['posterURL']
+                    'posterURL': item['posterURL'],
+                    'duration': item['duration']
                   })
               .toList();
         });
@@ -95,7 +96,7 @@ class _NowshowingState extends State<Nowshowing> {
                             seat: movie["seat"], 
                             movieId: movie["mv_id"], 
                             date: movie['release_date'], 
-                            uid: widget.uid, image: movie["posterURL"],
+                            uid: widget.uid, image: movie["posterURL"], duration: movie["duration"],
                           ),
                         ),
                       );

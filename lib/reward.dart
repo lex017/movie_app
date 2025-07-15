@@ -50,21 +50,20 @@ class _RewardState extends State<Reward> {
 
 Future<void> fetchPoints(String uId) async {
   try {
-    final res = await http.get(Uri.parse('http://192.168.0.198:8000/points?u_id=$uId'));
+    final res = await http.get(Uri.parse('http://192.168.0.198:8000/user/$uId'));
     if (res.statusCode == 200) {
-      final List<dynamic> data = json.decode(res.body);
-      if (data.isNotEmpty) {
-        setState(() {
-          userPoints = data[0]['col_points']; // Assuming one row per user
-        });
-      }
+      final data = json.decode(res.body);
+      setState(() {
+        userPoints = data['point'] ?? 0;
+      });
     } else {
-      throw Exception('Failed to load points');
+      throw Exception('Failed to load user');
     }
   } catch (e) {
-    print("Points error: $e");
+    print("User point fetch error: $e");
   }
 }
+
 
 
   @override
