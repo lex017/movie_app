@@ -50,10 +50,19 @@ class _CheckState extends State<Check> {
     setState(() => isVerifying = true);
 
     try {
+      final userId = ticketData?['u_id']; // ✅ Extract u_id from ticket
+      if (userId == null) {
+        _showSnackBar('❌ User ID not found.');
+        return;
+      }
+
       final res = await http.put(
         Uri.parse('http://192.168.0.198:8000/ticket/${widget.ticketId}'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'status': 'check-in'}),
+        body: jsonEncode({
+          'status': 'check-in',
+          'u_id': userId, // ✅ Send user ID to backend
+        }),
       );
 
       if (res.statusCode == 200) {

@@ -103,11 +103,7 @@ class DetailTicket extends StatelessWidget {
                         backgroundColor: Colors.white,
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        'QR Data: $qrData',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
+                     
 
                       const SizedBox(height: 12),
                       Text(

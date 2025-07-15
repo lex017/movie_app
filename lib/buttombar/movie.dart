@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:movie_app/detailTailler.dart';
 
 class Movie extends StatefulWidget {
@@ -34,6 +34,8 @@ class _PromotionState extends State<Movie> {
               .map<Map<String, dynamic>>((item) => {
                     'mv_name': item['mv_name'],
                     'posterURL': getImageUrl(item['posterURL']),
+                    'description': item['description'] ?? 'No description available',
+                    'trailer': item['trailer'] ?? '',
                   })
               .toList();
         });
@@ -70,9 +72,11 @@ class _PromotionState extends State<Movie> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => trailer(
+                            builder: (context) => TrailerPage(
                               title: promotions[index]["mv_name"]!,
                               imageUrl: promotions[index]["posterURL"]!,
+                              description: promotions[index]["description"]!,
+                              trailerUrl: promotions[index]["trailer"]!,
                             ),
                           ),
                         );

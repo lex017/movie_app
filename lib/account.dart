@@ -14,6 +14,7 @@ class Account extends StatefulWidget {
 
 class _AccountState extends State<Account> {
   File? _selectedImage;
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -55,6 +56,7 @@ class _AccountState extends State<Account> {
         final data = json.decode(res.body);
         setState(() {
           userData = data;
+          _nameController.text = data['u_name'] ?? '';
           _emailController.text = data['u_email'] ?? '';
           _phoneController.text = data['u_tel'] ?? '';
           _passwordController.text = data['u_password'] ?? '';
@@ -132,6 +134,7 @@ class _AccountState extends State<Account> {
       }
 
       final updatedUser = {
+        "u_name": _nameController.text,
         "u_email": _emailController.text,
         "u_tel": _phoneController.text,
         "u_password": _passwordController.text,
@@ -191,7 +194,7 @@ class _AccountState extends State<Account> {
                                 ? FileImage(_selectedImage!)
                                 : (_imageUrl != null && _imageUrl!.isNotEmpty
                                     ? NetworkImage(_imageUrl!) as ImageProvider
-                                    : const AssetImage('assets/deang.jpeg')),
+                                    : const AssetImage('assets/user.jpeg')),
                           ),
                           Positioned(
                             bottom: 0,
@@ -205,6 +208,15 @@ class _AccountState extends State<Account> {
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 15),
+                      TextField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                       const SizedBox(height: 15),
                       TextField(

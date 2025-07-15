@@ -50,12 +50,31 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
   }
 
   Future<void> _fetchRewardPoints() async {
-    // TODO: Replace with real API call to get points needed for reward
-    // Example mock: set fixed 50 points to deduct
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      pointsToDeduct = 50; 
-    });
+    setState(() => isLoading = true);
+    try {
+      // ตัวอย่าง: เรียก API เพื่อดึงคะแนนที่ต้องใช้สำหรับ reward นี้
+      final res = await http.get(
+        Uri.parse('http://192.168.0.198:8000/reward/${widget.rewardId}'),
+      );
+      if (res.statusCode == 200) {
+        final reward = json.decode(res.body);
+        setState(() {
+          pointsToDeduct = reward['required_points'] ?? 0;
+        });
+      } else {
+        // กรณี API ไม่ตอบกลับ ให้ตั้งค่า default (หรือแจ้ง error)
+        setState(() {
+          pointsToDeduct = 5;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        pointsToDeduct = 5;
+      });
+      _showMessage('❌ Error fetching reward points: $e');
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   Future<void> _redeemPoints() async {
@@ -107,7 +126,7 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
         backgroundColor: Colors.green,
       ),
       body: Center(
-        child: isLoading
+        child: (isLoading && (currentPoints == null || pointsToDeduct == null))
             ? const CircularProgressIndicator()
             : Card(
                 margin: const EdgeInsets.all(20),
@@ -118,12 +137,14 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
                     children: [
                       Text('User ID: ${widget.userId}', style: const TextStyle(fontSize: 18)),
                       const SizedBox(height: 8),
-                      Text('Current Points: $currentPoints', style: const TextStyle(fontSize: 18)),
+                      Text('Current Points: ${currentPoints ?? "-"}', style: const TextStyle(fontSize: 18)),
                       const SizedBox(height: 8),
-                      Text('Points to Redeem: $pointsToDeduct', style: const TextStyle(fontSize: 18, color: Colors.red)),
+                      Text('Points to Redeem: ${pointsToDeduct ?? "-"}', style: const TextStyle(fontSize: 18, color: Colors.red)),
                       const SizedBox(height: 20),
                       ElevatedButton.icon(
-                        onPressed: isLoading ? null : _redeemPoints,
+                        onPressed: (isLoading || currentPoints == null || pointsToDeduct == null || currentPoints! < pointsToDeduct!)
+                            ? null
+                            : _redeemPoints,
                         icon: const Icon(Icons.redeem),
                         label: const Text('Redeem Points'),
                       ),

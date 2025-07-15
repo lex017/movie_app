@@ -166,7 +166,7 @@ class _DetailcomingState extends State<Detailcoming> {
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                     },
-                                    child: const Text("ตกลง"),
+                                    child: const Text("ຕົກລົງ"),
                                   ),
                                 ],
                               );

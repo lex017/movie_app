@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class trailer extends StatefulWidget {
+class TrailerPage extends StatefulWidget {
   final String title;
   final String imageUrl;
-  const trailer({super.key, required this.title, required this.imageUrl});
+  final String description;
+  final String trailerUrl;
+
+  const TrailerPage({
+    super.key,
+    required this.title,
+    required this.imageUrl,
+    required this.description,
+    required this.trailerUrl,
+  });
 
   @override
-  State<trailer> createState() => _trailerState();
+  State<TrailerPage> createState() => _TrailerPageState();
 }
 
-class _trailerState extends State<trailer> {
+class _TrailerPageState extends State<TrailerPage> {
   bool isFavorite = false;
 
   @override
@@ -20,7 +30,7 @@ class _trailerState extends State<trailer> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          widget.title.toUpperCase(), // Uppercase for emphasis
+          widget.title.toUpperCase(),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -44,7 +54,6 @@ class _trailerState extends State<trailer> {
       ),
       body: Stack(
         children: [
-          // Background movie image
           Container(
             height: MediaQuery.of(context).size.height * 0.45,
             decoration: BoxDecoration(
@@ -63,8 +72,6 @@ class _trailerState extends State<trailer> {
               ),
             ),
           ),
-
-          // Draggable movie details sheet
           DraggableScrollableSheet(
             snap: true,
             initialChildSize: 0.6,
@@ -89,7 +96,6 @@ class _trailerState extends State<trailer> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Drag handle indicator
                     Container(
                       width: 50,
                       height: 5,
@@ -99,26 +105,20 @@ class _trailerState extends State<trailer> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    Column(
-                      children: [
-                        Text(
-                          widget.title.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: Colors.black87,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 15),
-                        // Subtitle
-                        
-                      ],
-                    ),
-                    // Movie description
                     Text(
-                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Sed at dui nec ipsum vestibulum venenatis.",
+                      widget.title.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 15),
+
+                    Text(
+                      widget.description,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[800],
@@ -126,14 +126,33 @@ class _trailerState extends State<trailer> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        children: [],
-                      ),
-                    ),
 
-                    // Book Now button at the bottom
+                    if (widget.trailerUrl.isNotEmpty)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text("Watch Trailer"),
+                          onPressed: () async {
+                            final url = Uri.parse(widget.trailerUrl);
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Cannot open trailer URL"),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black87,
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 10),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -143,12 +162,11 @@ class _trailerState extends State<trailer> {
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 title: const Text("Comming Soon"),
-                                content: const Text(
-                                    "ຖ້າກ່ອນຍັງບໍ່ມາ!"),
+                                content: const Text("ຖ້າກ່ອນຍັງບໍ່ມາ!"),
                                 actions: [
                                   TextButton(
                                     onPressed: () {
-                                      Navigator.of(context).pop(); // ปิด Dialog
+                                      Navigator.of(context).pop();
                                     },
                                     child: const Text("ตกลง"),
                                   ),
