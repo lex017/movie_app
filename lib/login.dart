@@ -147,27 +147,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
 
-                    // ✅ NEW: Employee QR Scan Button
-                    const Divider(height: 30),
-                    ListTile(
-                      leading: const Icon(Icons.qr_code_scanner, color: Colors.black87),
-                      title: const Text("EmployeeID"),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        if (userId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EmpLogin(uid: userId!),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('User ID not found. Please login first.')),
-                          );
-                        }
-                      },
-                    ),
+                    
                   ],
                 ),
               ),

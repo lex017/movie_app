@@ -43,6 +43,7 @@ class _PayState extends State<Pay> {
   File? _selectedImage;
   Uint8List? _imageBytes;
   bool _isUploading = false;
+   bool isLoading = false; // add this to your State class
   String? _imageUrl;
   final ImagePicker _picker = ImagePicker();
   final TextEditingController timeController = TextEditingController();
@@ -417,20 +418,44 @@ class _PayState extends State<Pay> {
               ),
             ),
             const SizedBox(height: 40),
-            Center(
-              child: ElevatedButton(
-                onPressed: _submitTicket,
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  backgroundColor: Colors.red,
-                ),
-                child: const Text("Pay Now",
-                    style: TextStyle(fontSize: 18, color: Colors.white)),
-              ),
+           
+
+// Then update your button like this:
+
+Center(
+  child: ElevatedButton(
+    onPressed: isLoading ? null : () async {
+      setState(() {
+        isLoading = true;
+      });
+
+      await _submitTicket();
+
+      setState(() {
+        isLoading = false;
+      });
+    },
+    style: ElevatedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.red,
+    ),
+    child: isLoading
+        ? const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 3,
             ),
+          )
+        : const Text(
+            "Pay Now",
+            style: TextStyle(fontSize: 18, color: Colors.white),
+          ),
+  ),
+),
+
           ],
         ),
       ),
