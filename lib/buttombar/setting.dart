@@ -115,7 +115,6 @@ class _SettingState extends State<Setting> {
           : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
-                // 👤 Profile Section
                 Container(
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
@@ -124,9 +123,14 @@ class _SettingState extends State<Setting> {
                   ),
                   child: Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 30,
-                        backgroundImage: AssetImage('assets/deang.jpeg'),
+                        backgroundImage: userData != null &&
+                                userData!['u_profile'] != null &&
+                                userData!['u_profile'].toString().isNotEmpty
+                            ? NetworkImage(userData!['u_profile'])
+                            : const AssetImage('assets/user.jpeg')
+                                as ImageProvider,
                       ),
                       const SizedBox(width: 16),
                       Column(

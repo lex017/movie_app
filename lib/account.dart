@@ -87,7 +87,7 @@ class _AccountState extends State<Account> {
 
   Future<void> _uploadToCloudinary(File imageFile) async {
     const cloudName = 'dwmp7qmqw';
-    const uploadPreset = 'movie';
+    const uploadPreset = 'ticket';
     final url = Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
 
     final request = http.MultipartRequest('POST', url)

@@ -3,7 +3,16 @@ import 'package:flutter/material.dart';
 class Detailcoming extends StatefulWidget {
   final String title;
   final String imageUrl;
-  const Detailcoming({super.key, required this.title, required this.imageUrl});
+  final String releaseDate;
+  final String description;
+
+  const Detailcoming({
+    super.key,
+    required this.title,
+    required this.imageUrl,
+    required this.releaseDate,
+    required this.description,
+  });
 
   @override
   State<Detailcoming> createState() => _DetailcomingState();
@@ -11,9 +20,7 @@ class Detailcoming extends StatefulWidget {
 
 class _DetailcomingState extends State<Detailcoming> {
   bool isFavorite = false;
-  final List<Map<String, String>> date = [
-    {"Date" : "25/22/2025",}
-  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,7 +29,7 @@ class _DetailcomingState extends State<Detailcoming> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          widget.title.toUpperCase(), // Uppercase for emphasis
+          widget.title.toUpperCase(),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -114,9 +121,9 @@ class _DetailcomingState extends State<Detailcoming> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 15),
-                        // Subtitle
+                        // Release Date
                         Text(
-                          "Release Date: ${date[0]["Date"]}",
+                          "Release Date: ${widget.releaseDate}",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -128,21 +135,20 @@ class _DetailcomingState extends State<Detailcoming> {
                       ],
                     ),
                     // Movie description
-                    Text(
-                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Sed at dui nec ipsum vestibulum venenatis.",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[800],
-                        height: 1.5,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        child: Text(
+                          widget.description,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[800],
+                            height: 1.5,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        children: [],
-                      ),
-                    ),
 
                     // Book Now button at the bottom
                     SizedBox(
@@ -153,13 +159,12 @@ class _DetailcomingState extends State<Detailcoming> {
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: const Text("Comming Soon"),
-                                content: const Text(
-                                    "ຖ້າກ່ອນຍັງບໍ່ມາ!"),
+                                title: const Text("Coming Soon"),
+                                content: const Text("ຖ້າກ່ອນຍັງບໍ່ມາ!"),
                                 actions: [
                                   TextButton(
                                     onPressed: () {
-                                      Navigator.of(context).pop(); // ปิด Dialog
+                                      Navigator.of(context).pop();
                                     },
                                     child: const Text("ตกลง"),
                                   ),
@@ -176,7 +181,7 @@ class _DetailcomingState extends State<Detailcoming> {
                           padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
                         child: const Text(
-                          "Comming soon",
+                          "Coming Soon",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

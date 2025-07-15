@@ -23,7 +23,7 @@ class DetailTicket extends StatelessWidget {
   String _formatDate(String dateStr) {
     try {
       DateTime dateTime = DateTime.parse(dateStr).toLocal();
-      return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+      return DateFormat('dd/MM/yyyy').format(dateTime);
     } catch (e) {
       return 'Invalid date';
     }

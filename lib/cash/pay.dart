@@ -189,23 +189,24 @@ class _PayState extends State<Pay> {
     }
   }
 
-  Future<void> _waitForVerification(int ticketId) async {
-    int countdown = 300;
-    bool isVerified = false;
-    bool isRejected = false;
-    Timer? timer;
-    late StateSetter dialogSetState;
-    BuildContext dialogContext = context;
+ Future<void> _waitForVerification(int ticketId) async {
+  int countdown = 300; // 5 minutes countdown
+  bool isVerified = false;
+  bool isRejected = false;
+  Timer? timer;
+  late StateSetter dialogSetState;
+  BuildContext dialogContext = context;
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        timer = Timer.periodic(const Duration(seconds: 1), (t) async {
-          countdown--;
+  await showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      // Start periodic timer that runs every second
+      timer = Timer.periodic(const Duration(seconds: 1), (t) async {
+        countdown--;
 
-          final res = await http
-              .get(Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
+        try {
+          final res = await http.get(Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
 
           if (res.statusCode == 200) {
             final ticket = jsonDecode(res.body);
@@ -214,16 +215,16 @@ class _PayState extends State<Pay> {
             if (status == 'paid') {
               isVerified = true;
               timer?.cancel();
-              Navigator.pop(context);
+              Navigator.pop(context); // Close the verification dialog
 
-           
+              // Update points
               await http.put(
-                Uri.parse(
-                    "http://192.168.0.198:8000/user/updatePoint/${widget.uid}"),
+                Uri.parse("http://192.168.0.198:8000/user/updatePoint/${widget.uid}"),
                 headers: {'Content-Type': 'application/json'},
                 body: json.encode({'add_point': 10}),
               );
 
+              // Navigate to detail ticket page
               Navigator.pushReplacement(
                 dialogContext,
                 MaterialPageRoute(
@@ -249,105 +250,106 @@ class _PayState extends State<Pay> {
             } else if (status == 'rejected') {
               isRejected = true;
               timer?.cancel();
-              Navigator.pop(context);
+              Navigator.pop(context); // Close the verification dialog
 
-              await http.delete(
-                  Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
+              // Delete rejected ticket
+              await http.delete(Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
 
+              // Show rejection alert and navigate to homepage after OK
               showDialog(
                 context: dialogContext,
                 builder: (_) => AlertDialog(
                   title: const Text('❌ Payment Rejected'),
-                  content: const Text(
-                      'Your payment was rejected. Please try again.'),
+                  content: const Text('Your payment was rejected. Please try again.'),
                   actions: [
                     TextButton(
                       onPressed: () {
-                        Navigator.of(dialogContext).pop();
-                        Navigator.of(dialogContext, rootNavigator: true)
-                            .pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => Homepage(uid: widget.uid)),
+                        Navigator.of(dialogContext).pop(); // Close rejection dialog
+                        Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => Homepage(uid: widget.uid)),
                           (route) => false,
                         );
                       },
                       child: const Text('OK'),
-                    )
+                    ),
                   ],
                 ),
               );
               return;
             }
           }
+        } catch (e) {
+          // You can handle errors here or ignore
+        }
 
-          if (countdown <= 0 && !isVerified && !isRejected) {
-            timer?.cancel();
-            Navigator.pop(context);
+        if (countdown <= 0 && !isVerified && !isRejected) {
+          timer?.cancel();
+          Navigator.pop(context); // Close the verification dialog
 
-            await http.delete(
-                Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
+          // Delete ticket on timeout
+          await http.delete(Uri.parse("http://192.168.0.198:8000/ticket/$ticketId"));
 
-            ScaffoldMessenger.of(dialogContext).showSnackBar(
-              const SnackBar(content: Text('⏰ Verification timed out.')),
-            );
+          ScaffoldMessenger.of(dialogContext).showSnackBar(
+            const SnackBar(content: Text('⏰ Verification timed out.')),
+          );
 
-            Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
-              MaterialPageRoute(
-                  builder: (context) => Homepage(uid: widget.uid)),
-              (route) => false,
-            );
-          }
+          Navigator.of(dialogContext, rootNavigator: true).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => Homepage(uid: widget.uid)),
+            (route) => false,
+          );
+        }
 
-          dialogSetState(() {});
-        });
+        // Refresh dialog state to update countdown timer UI
+        dialogSetState(() {});
+      });
 
-        return StatefulBuilder(
-          builder: (context, setState) {
-            dialogSetState = setState;
-            final minutes = (countdown ~/ 60).toString().padLeft(2, '0');
-            final seconds = (countdown % 60).toString().padLeft(2, '0');
+      // StatefulBuilder allows updating dialog content dynamically
+      return StatefulBuilder(
+        builder: (context, setState) {
+          dialogSetState = setState;
+          final minutes = (countdown ~/ 60).toString().padLeft(2, '0');
+          final seconds = (countdown % 60).toString().padLeft(2, '0');
 
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: const [
-                  Icon(Icons.timer, color: Colors.deepOrange),
-                  SizedBox(width: 10),
-                  Text("Waiting for Verification"),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Lottie.network(
-                    'https://assets9.lottiefiles.com/packages/lf20_x62chJ.json',
-                    height: 100,
-                    width: 100,
-                    fit: BoxFit.contain,
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: const [
+                Icon(Icons.timer, color: Colors.deepOrange),
+                SizedBox(width: 10),
+                Text("Waiting for Verification"),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.network(
+                  'https://assets9.lottiefiles.com/packages/lf20_x62chJ.json',
+                  height: 100,
+                  width: 100,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 10),
+                const Text("Please complete your payment within:"),
+                Text(
+                  "$minutes:$seconds",
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
                   ),
-                  const SizedBox(height: 10),
-                  const Text("Please complete your payment within:"),
-                  Text(
-                    "$minutes:$seconds",
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text("Waiting for admin to verify payment..."),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+                ),
+                const SizedBox(height: 12),
+                const Text("Waiting for admin to verify payment..."),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 
-    timer?.cancel();
-  }
+  timer?.cancel();
+}
 
   @override
   Widget build(BuildContext context) {
