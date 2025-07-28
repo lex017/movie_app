@@ -21,7 +21,7 @@ class _ComingsoonState extends State<Comingsoon> {
   Future<void> fetchMovies() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.198:8000/movie'), // Your API URL
+        Uri.parse('http://192.168.0.196:8000/movie'), // Your API URL
       );
 
       if (response.statusCode == 200) {
@@ -50,7 +50,7 @@ class _ComingsoonState extends State<Comingsoon> {
     if (posterURL.startsWith('http://') || posterURL.startsWith('https://')) {
       return posterURL;
     } else {
-      return "http://192.168.0.198/movie_img/$posterURL";
+      return "http://192.168.0.196/movie_img/$posterURL";
     }
   }
 

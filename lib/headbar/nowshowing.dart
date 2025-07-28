@@ -23,7 +23,7 @@ class _NowshowingState extends State<Nowshowing> {
   Future<void> fetchMovies() async {
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.0.198:8000/movie'), 
+        Uri.parse('http://192.168.0.196:8000/movie'), 
       );
 
       if (response.statusCode == 200) {
@@ -58,7 +58,7 @@ class _NowshowingState extends State<Nowshowing> {
     if (posterURL.startsWith('http://') || posterURL.startsWith('https://')) {
       return posterURL;
     } else {
-      return "http://192.168.0.198/movie_img/$posterURL"; // 
+      return "http://192.168.165.4/movie_img/$posterURL"; // 
     }
   }
 

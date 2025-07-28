@@ -29,7 +29,7 @@ class _CheckState extends State<Check> {
 
     try {
       final res = await http.get(
-        Uri.parse('http://192.168.0.198:8000/ticket/${widget.ticketId}'),
+        Uri.parse('http://192.168.0.196:8000/ticket/${widget.ticketId}'),
       );
 
       if (res.statusCode == 200) {
@@ -57,7 +57,7 @@ class _CheckState extends State<Check> {
       }
 
       final res = await http.put(
-        Uri.parse('http://192.168.0.198:8000/ticket/${widget.ticketId}'),
+        Uri.parse('http://192.168.0.196:8000/ticket/${widget.ticketId}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'status': 'check-in',

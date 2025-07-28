@@ -53,7 +53,7 @@ class _ChairSelectionState extends State<ChairSelection> {
   Future<void> fetchBookedSeatsFromApi() async {
     try {
       final url = Uri.parse(
-          'http://192.168.0.198:8000/api/booked-seats/${widget.showtimeId}');
+          'http://192.168.0.196:8000/api/booked-seats/${widget.showtimeId}');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

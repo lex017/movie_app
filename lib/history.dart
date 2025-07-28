@@ -25,30 +25,30 @@ class _HistoryPageState extends State<HistoryPage> {
   Future<void> fetchHistory() async {
     try {
       final ticketResponse = await http.get(
-        Uri.parse("http://192.168.0.198:8000/tickets?u_id=${widget.uid}"),
+        Uri.parse("http://192.168.0.196:8000/tickets?u_id=${widget.uid}"),
       );
-      final rewardResponse = await http.get(
-        Uri.parse("http://192.168.0.198:8000/reward?u_id=${widget.uid}"),
+      final tradeRewardResponse = await http.get(
+        Uri.parse("http://192.168.0.196:8000/tradereward?u_id=${widget.uid}"),
       );
 
-      if (ticketResponse.statusCode == 200 && rewardResponse.statusCode == 200) {
+      if (ticketResponse.statusCode == 200 && tradeRewardResponse.statusCode == 200) {
         List<dynamic> tickets = jsonDecode(ticketResponse.body);
-        List<dynamic> rewards = jsonDecode(rewardResponse.body);
+        List<dynamic> tradeRewards = jsonDecode(tradeRewardResponse.body);
 
         // Combine and mark type for UI
         List<Map<String, dynamic>> combined = [
           ...tickets.map((t) => {...t, 'type': 'ticket'}),
-          ...rewards.map((r) => {...r, 'type': 'reward'}),
+          ...tradeRewards.map((r) => {...r, 'type': 'tradereward'}),
         ];
 
         // Sort by date descending (newest first)
         combined.sort((a, b) {
           DateTime dateA = DateTime.tryParse(
-                a['booking_date'] ?? a['redeem_date'] ?? '',
+                a['booking_date'] ?? a['trade_datetime'] ?? '',
               ) ??
               DateTime(1970);
           DateTime dateB = DateTime.tryParse(
-                b['booking_date'] ?? b['redeem_date'] ?? '',
+                b['booking_date'] ?? b['trade_datetime'] ?? '',
               ) ??
               DateTime(1970);
           return dateB.compareTo(dateA);
@@ -61,7 +61,7 @@ class _HistoryPageState extends State<HistoryPage> {
         });
       } else {
         setState(() {
-          errorMessage = 'Failed to fetch data. Server responded with status codes: ${ticketResponse.statusCode}, ${rewardResponse.statusCode}';
+          errorMessage = 'Failed to fetch data. Server responded with status codes: ${ticketResponse.statusCode}, ${tradeRewardResponse.statusCode}';
           isLoading = false;
         });
       }
@@ -105,14 +105,14 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                           title: Text(isTicket
                               ? (item['mv_name'] ?? 'Movie Ticket')
-                              : (item['re_name'] ?? 'Reward')),
+                              : (item['re_name'] ?? 'Trade Reward')),
                           subtitle: Text(isTicket
                               ? 'Seat: ${item['seat_num'] ?? '-'} | Theater: ${item['theaters'] ?? '-'}\nDate: ${item['booking_date'] ?? '-'}'
-                              : 'Points: ${item['r_point'] ?? '-'}\nDate: ${item['redeem_date'] ?? '-'}'),
+                              : 'Type: ${item['re_type'] ?? '-'} | Points: ${item['point'] ?? '-'}\nDate: ${item['trade_datetime'] ?? '-'}'),
                           trailing: Text(
                             isTicket
                                 ? '${item['price'] ?? 0} ₭'
-                                : '${item['r_point'] ?? 0} pts',
+                                : '${item['point'] ?? 0} pts',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         );

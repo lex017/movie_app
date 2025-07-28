@@ -28,21 +28,30 @@ class _EmpLoginState extends State<EmpLogin> {
     final password = _passwordController.text;
 
     try {
-      final url = Uri.parse('http://192.168.0.198:8000/admin/login');
+      final url = Uri.parse('http://192.168.0.196:8000/emp/login');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'admin_email': email,
-          'admin_password': password,
+          'emp_email': email,
+          'emp_password': password,
         }),
       );
 
       if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        final user = responseData['user'] ?? responseData;  // ปรับตาม backend
+        final empId = user['emp_id'].toString();
+        final empName = user['emp_name'].toString();
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => EmpMain( adminEmail: email, uid: widget.uid,),
+            builder: (context) => EmpMain(
+              empId: empId,
+              empName: empName,
+              empEmail: email,
+            ),
           ),
         );
       } else if (response.statusCode == 401) {

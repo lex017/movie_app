@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:movie_app/emp_scan.dart'; // import หน้า scan ของคุณ
+import 'package:movie_app/emp_scan.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class EmpMain extends StatefulWidget {
-  final String adminEmail;
-  final String uid;
+  final String empEmail;
+  final String empName;
+  final String empId;
 
-  const EmpMain({super.key, required this.adminEmail, required this.uid});
+  const EmpMain({
+    super.key,
+    required this.empEmail,
+    required this.empId,
+    required this.empName,
+  });
 
   @override
   State<EmpMain> createState() => _EmpMainState();
@@ -20,54 +26,55 @@ class _EmpMainState extends State<EmpMain> {
   @override
   void initState() {
     super.initState();
-    fetchAdminData(widget.adminEmail);
+    fetchAdminData(widget.empEmail);
   }
 
   Future<void> fetchAdminData(String email) async {
-  try {
-    final url = Uri.parse('http://192.168.0.198:8000/admin/email/$email');
-    final response = await http.get(url);
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      print('Parsed data: $data');
+    try {
+      final url = Uri.parse('http://192.168.0.196:8000/emp/email/$email');
+      final response = await http.get(url);
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is Map<String, dynamic>) {
+          setState(() {
+            employee = data;
+            isLoading = false;
+          });
+        } else {
+          throw Exception('Invalid data format from server');
+        }
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Employee not found')),
+        );
+      }
+    } catch (e) {
       setState(() {
-        employee = data;
         isLoading = false;
       });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
+      print('Error fetching emp: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('dont see admin')),
+        SnackBar(content: Text('Error: $e')),
       );
     }
-  } catch (e) {
-    setState(() {
-      isLoading = false;
-    });
-    print('Error fetching admin: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('err: $e')),
+  }
+
+  void _onScanPressed() async {
+    String? result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ScanPage(userId: widget.empId)),
     );
+
+    if (result != null) {
+      print('Scanned QR Code: $result');
+    }
   }
-}
-
-
- void _onScanPressed() async {
-  String? result = await Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => ScanPage(userId: widget.uid)),
-  );
-
-  if (result != null) {
-    print('Scanned QR Code: $result');
-
-  }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +88,7 @@ class _EmpMainState extends State<EmpMain> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : employee == null
-              ? const Center(child: Text('dont see emp'))
+              ? const Center(child: Text('Employee data not available'))
               : Card(
                   elevation: 8,
                   margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
@@ -95,7 +102,9 @@ class _EmpMainState extends State<EmpMain> {
                           radius: 50,
                           backgroundColor: Colors.red,
                           child: Text(
-                            (employee!['admin_name'] ?? 'U')[0],
+                            (employee?['emp_name'] != null && employee!['emp_name'].toString().isNotEmpty)
+                                ? employee!['emp_name'][0]
+                                : 'U',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 48,
@@ -105,7 +114,7 @@ class _EmpMainState extends State<EmpMain> {
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          employee!['admin_name'] ?? '',
+                          employee?['emp_name']?.toString() ?? 'No Name',
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -113,9 +122,9 @@ class _EmpMainState extends State<EmpMain> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Employee scan', 
-                          style: const TextStyle(
+                        const Text(
+                          'Employee scan',
+                          style: TextStyle(
                             fontSize: 20,
                             color: Colors.red,
                             fontWeight: FontWeight.w500,
@@ -134,7 +143,7 @@ class _EmpMainState extends State<EmpMain> {
                             const Icon(Icons.email, color: Colors.red),
                             const SizedBox(width: 8),
                             Text(
-                              employee!['admin_email'] ?? '',
+                              employee?['emp_email']?.toString() ?? 'No email',
                               style: const TextStyle(fontSize: 16),
                             ),
                           ],
@@ -146,7 +155,7 @@ class _EmpMainState extends State<EmpMain> {
                             const Icon(Icons.phone, color: Colors.red),
                             const SizedBox(width: 8),
                             Text(
-                              employee!['admin_tel'] ?? '',
+                              employee?['emp_tel']?.toString() ?? 'No phone',
                               style: const TextStyle(fontSize: 16),
                             ),
                           ],

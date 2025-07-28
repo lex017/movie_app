@@ -38,7 +38,7 @@ class _RegisterState extends State<Register> {
 
     try {
       final res = await http.post(
-        Uri.parse('http://192.168.0.198:8000/register'),
+        Uri.parse('http://192.168.0.196:8000/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'u_name': name,

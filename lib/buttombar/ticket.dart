@@ -25,7 +25,7 @@ class _TicketState extends State<Ticket> {
 
  Future<void> fetchTickets() async {
   try {
-    final response = await http.get(Uri.parse('http://192.168.0.198:8000/tickets'));
+    final response = await http.get(Uri.parse('http://192.168.0.196:8000/tickets'));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);

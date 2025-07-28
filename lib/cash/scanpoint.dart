@@ -33,7 +33,7 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
   Future<void> _fetchUserPoints() async {
     try {
       final res = await http.get(
-        Uri.parse('http://192.168.0.198:8000/user/${widget.userId}'),
+        Uri.parse('http://192.168.0.196:8000/user/${widget.userId}'),
       );
       if (res.statusCode == 200) {
         final user = json.decode(res.body);
@@ -61,11 +61,14 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
 
     try {
       final res = await http.put(
-        Uri.parse('http://192.168.0.198:8000/user/${widget.userId}'),
+        Uri.parse('http://192.168.0.196:8000/user/${widget.userId}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'point': newPoints}),
       );
       if (res.statusCode == 200) {
+        // บันทึกข้อมูล trade ต่อหลัง redeem point สำเร็จ
+        await _logTrade();
+
         setState(() {
           redeemed = true;
           userPoints = newPoints;
@@ -78,6 +81,40 @@ class _RedeemPointsPageState extends State<RedeemPointsPage> {
       _showMessage('Error: $e');
     } finally {
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _logTrade() async {
+    final tradeDatetime = DateTime.now().toIso8601String();
+    final status = "redeemed";
+
+    String reName = widget.selectedCandies.map((e) => e['name']).join(", ");
+    String reType = widget.selectedCandies.map((e) => e['type'] ?? "Candy").join(", ");
+
+    int reId = widget.selectedCandies.isNotEmpty ? (widget.selectedCandies[0]['id'] ?? 0) : 0;
+
+    final tradeData = {
+      'trade_datetime': tradeDatetime,
+      'status': status,
+      're_name': reName,
+      're_type': reType,
+      'point': widget.totalPoints,
+      'u_id': int.tryParse(widget.userId) ?? 0,
+      're_id': reId,
+    };
+
+    try {
+      final res = await http.post(
+  Uri.parse('http://192.168.0.196:8000/tradereward'), // <-- updated endpoint
+  headers: {'Content-Type': 'application/json'},
+  body: json.encode(tradeData),
+);
+
+      if (res.statusCode != 200) {
+        print('Failed to log trade: ${res.body}');
+      }
+    } catch (e) {
+      print('Error logging trade: $e');
     }
   }
 

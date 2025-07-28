@@ -31,7 +31,7 @@ class _ScanPageState extends State<ScanPage> {
           final ticketId = data['ticketId'];
 
           final res = await http.get(
-            Uri.parse('http://192.168.0.198:8000/ticket/$ticketId'),
+            Uri.parse('http://192.168.0.196:8000/ticket/$ticketId'),
           );
 
           if (res.statusCode == 200) {

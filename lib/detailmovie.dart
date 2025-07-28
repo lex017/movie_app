@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // ต้องเพิ่มใน pubspec.yaml
 import 'package:movie_app/selectchair.dart';
 
 class MovieDetails extends StatefulWidget {
@@ -11,7 +12,7 @@ class MovieDetails extends StatefulWidget {
   final int theaters; // theaters_id
   final int price;
   final int seat;
-  final String date;
+  final String date;  // สมมุติเป็น 'yyyy-MM-dd' หรือ 'dd/MM/yyyy'
   final String uid;
   final String image;
   final int duration;
@@ -26,7 +27,9 @@ class MovieDetails extends StatefulWidget {
     required this.price,
     required this.seat,
     required this.date,
-    required this.uid, required this.image, required this.duration,
+    required this.uid,
+    required this.image,
+    required this.duration,
   });
 
   @override
@@ -36,22 +39,36 @@ class MovieDetails extends StatefulWidget {
 class _MovieDetailsState extends State<MovieDetails> {
   bool isFavorite = false;
 
-  // Store full showtime objects: each contains showtime_id, showt_ime, etc.
   List<Map<String, dynamic>> availableShowtimes = [];
 
-  int? selectedShowtimeId;        // selected showtime_id
-  String? selectedShowtimeTime;   // selected showtime display time
+  int? selectedShowtimeId;
+  String? selectedShowtimeTime;
 
   bool isLoading = true;
+
+  DateTime? movieDate;
+  DateTime now = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+
+    // แปลงวันที่หนังฉายจาก String เป็น DateTime
+    try {
+      movieDate = DateFormat('yyyy-MM-dd').parse(widget.date);
+    } catch (e) {
+      try {
+        movieDate = DateFormat('dd/MM/yyyy').parse(widget.date);
+      } catch (e) {
+        movieDate = null;
+      }
+    }
+
     fetchShowtimes();
   }
 
   Future<void> fetchShowtimes() async {
-    final url = Uri.parse('http://192.168.0.198:8000/showtime');
+    final url = Uri.parse('http://192.168.0.196:8000/showtime');
     final res = await http.get(url);
 
     if (res.statusCode == 200) {
@@ -70,8 +87,41 @@ class _MovieDetailsState extends State<MovieDetails> {
     }
   }
 
+  bool isShowtimePassed(String showtimeStr) {
+    if (movieDate == null) return false;
+
+    List<String> parts = showtimeStr.split(':');
+    if (parts.length != 2) return false;
+
+    int hour = int.tryParse(parts[0]) ?? 0;
+    int minute = int.tryParse(parts[1]) ?? 0;
+
+    DateTime showtimeDateTime = DateTime(
+      movieDate!.year,
+      movieDate!.month,
+      movieDate!.day,
+      hour,
+      minute,
+    );
+
+    DateTime nowTime = DateTime.now();
+
+    return nowTime.isAfter(showtimeDateTime);
+  }
+
+  bool isMovieDatePassed() {
+    if (movieDate == null) return false;
+
+    DateTime today = DateTime.now();
+
+    // ถ้าวันนี้มากกว่าวันฉาย ห้ามจอง
+    return today.isAfter(movieDate!);
+  }
+
   @override
   Widget build(BuildContext context) {
+    bool disableBooking = isMovieDatePassed();
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -127,10 +177,12 @@ class _MovieDetailsState extends State<MovieDetails> {
             maxChildSize: 0.9,
             builder: (context, scrollController) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(30)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
@@ -212,22 +264,33 @@ class _MovieDetailsState extends State<MovieDetails> {
                             spacing: 10,
                             children: availableShowtimes.map((showtime) {
                               final showtimeId = showtime['showtime_id'];
-                              final showtimeStr = showtime['showt_ime'].toString().substring(0, 5);
+                              final showtimeStr =
+                                  showtime['showt_ime'].toString().substring(0, 5);
                               final isSelected = selectedShowtimeId == showtimeId;
+
+                              bool passed = isShowtimePassed(showtimeStr);
 
                               return ChoiceChip(
                                 label: Text(showtimeStr),
                                 selected: isSelected,
-                                onSelected: (_) {
-                                  setState(() {
-                                    selectedShowtimeId = showtimeId;
-                                    selectedShowtimeTime = showtimeStr;
-                                  });
-                                },
+                                onSelected: passed || disableBooking
+                                    ? null
+                                    : (_) {
+                                        setState(() {
+                                          selectedShowtimeId = showtimeId;
+                                          selectedShowtimeTime = showtimeStr;
+                                        });
+                                      },
                                 selectedColor: Colors.redAccent,
-                                backgroundColor: Colors.grey[200],
+                                backgroundColor: passed || disableBooking
+                                    ? Colors.grey[400]
+                                    : Colors.grey[200],
                                 labelStyle: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.black87,
+                                  color: passed || disableBooking
+                                      ? Colors.grey[700]
+                                      : isSelected
+                                          ? Colors.white
+                                          : Colors.black87,
                                   fontWeight: FontWeight.w600,
                                 ),
                               );
@@ -237,7 +300,7 @@ class _MovieDetailsState extends State<MovieDetails> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: selectedShowtimeId == null
+                        onPressed: disableBooking || selectedShowtimeId == null
                             ? null
                             : () {
                                 int seatCount = widget.seat;
@@ -262,13 +325,15 @@ class _MovieDetailsState extends State<MovieDetails> {
                                       title: widget.title,
                                       date: widget.date,
                                       showtimeId: selectedShowtimeId!,
-                                      uid: widget.uid, image: widget.image,
+                                      uid: widget.uid,
+                                      image: widget.image,
                                     ),
                                   ),
                                 );
                               },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
+                          backgroundColor:
+                              disableBooking ? Colors.grey : Colors.redAccent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),

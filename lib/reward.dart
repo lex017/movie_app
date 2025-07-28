@@ -26,7 +26,7 @@ class _RewardState extends State<Reward> {
 
   Future<void> fetchRewards() async {
     try {
-      final res = await http.get(Uri.parse('http://192.168.0.198:8000/reward'));
+      final res = await http.get(Uri.parse('http://192.168.0.196:8000/reward'));
       if (res.statusCode == 200) {
         final List<dynamic> data = json.decode(res.body);
         setState(() {
@@ -50,7 +50,7 @@ class _RewardState extends State<Reward> {
 
 Future<void> fetchPoints(String uId) async {
   try {
-    final res = await http.get(Uri.parse('http://192.168.0.198:8000/user/$uId'));
+    final res = await http.get(Uri.parse('http://192.168.0.196:8000/user/$uId'));
     if (res.statusCode == 200) {
       final data = json.decode(res.body);
       setState(() {

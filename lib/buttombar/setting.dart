@@ -51,7 +51,7 @@ class _SettingState extends State<Setting> {
 
     try {
       final res =
-          await http.get(Uri.parse('http://192.168.0.198:8000/user/$userId'));
+          await http.get(Uri.parse('http://192.168.0.196:8000/user/$userId'));
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         setState(() {
